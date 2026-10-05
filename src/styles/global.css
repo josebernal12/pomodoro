@@ -1,4 +1,10 @@
-﻿:root {
+﻿@property --shrink {
+        syntax: "<number>";
+        inherits: true;
+        initial-value: 1;
+      }
+
+      :root {
         --ember: #f4b267;
         --lamplight: #ffe2ac;
         --rain-glass: rgba(226, 238, 236, 0.66);
@@ -273,7 +279,10 @@
 
       .focus-card {
         --ring: clamp(240px, min(36vw, 46vh), 400px);
+        --shrink: 1;
+        --ring-size: calc(var(--ring) * var(--shrink));
         --ring-color: var(--ember);
+        transition: --shrink 380ms cubic-bezier(0.2, 0.8, 0.2, 1);
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -285,10 +294,14 @@
         --ring-color: var(--mist);
       }
 
+      .focus-card[data-note-open="true"] {
+        --shrink: 0.62;
+      }
+
       .timer-ring {
         position: relative;
         display: grid;
-        width: var(--ring);
+        width: var(--ring-size);
         aspect-ratio: 1;
         place-items: center;
         border-radius: 50%;
@@ -339,7 +352,7 @@
         position: relative;
         display: grid;
         justify-items: center;
-        gap: calc(var(--ring) * 0.025);
+        gap: calc(var(--ring-size) * 0.025);
       }
 
       .mode-label {
@@ -354,7 +367,7 @@
       .timer {
         margin: 0;
         font-family: var(--font-display);
-        font-size: calc(var(--ring) * 0.3);
+        font-size: calc(var(--ring-size) * 0.3);
         font-weight: 300;
         font-variant-numeric: lining-nums tabular-nums;
         line-height: 0.9;
@@ -417,23 +430,31 @@
         margin: clamp(18px, 3vw, 28px) auto 0;
         color: var(--quiet-ink);
         font-size: clamp(1rem, 2vw, 1.18rem);
+        max-height: 80px;
+        overflow: hidden;
+        transition:
+          max-height 380ms cubic-bezier(0.2, 0.8, 0.2, 1),
+          margin 380ms cubic-bezier(0.2, 0.8, 0.2, 1),
+          min-height 380ms cubic-bezier(0.2, 0.8, 0.2, 1),
+          opacity 260ms ease;
       }
 
-      /* .active-note es un hueco de altura fija: la tarjeta crece hacia abajo dentro de él
-         sin empujar el layout, así el reloj no salta al abrir la lista. */
+      .focus-card[data-note-open="true"] .message {
+        max-height: 0;
+        min-height: 0;
+        margin-top: 0;
+        opacity: 0;
+      }
+
+      /* La tarjeta del chip está en el flujo: al abrir la lista crece, los botones bajan con
+         ella y el reloj se achica, todo con la misma curva para que se sienta una sola pieza. */
       .active-note {
         position: relative;
         width: min(380px, 88vw);
-        height: 50px;
         margin: clamp(14px, 2.4vh, 24px) auto 0;
       }
 
       .active-note-card {
-        position: absolute;
-        top: 0;
-        right: 0;
-        left: 0;
-        z-index: 3;
         overflow: hidden;
         border: 1px solid rgba(255, 247, 232, 0.2);
         border-radius: 25px;
@@ -448,8 +469,8 @@
       }
 
       .active-note[data-open="true"] .active-note-card {
-        background: rgba(17, 14, 11, 0.88);
-        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.4);
+        background: rgba(17, 14, 11, 0.72);
+        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.3);
       }
 
       .active-note-bar {
@@ -586,16 +607,11 @@
         transition-delay: 0s;
       }
 
-      .focus-card {
-        transform: translateY(calc(var(--lift, 0px) * -1));
-        transition: transform 380ms cubic-bezier(0.2, 0.8, 0.2, 1);
-      }
-
       .note-switcher-list {
         display: grid;
         gap: 2px;
         padding-top: 4px;
-        max-height: min(240px, 32vh);
+        max-height: clamp(96px, calc(71.5vh - 330px), 260px);
         overflow: auto;
         overscroll-behavior: contain;
       }
@@ -1928,6 +1944,10 @@
 
         .focus-card {
           --ring: clamp(240px, 72vw, 340px);
+        }
+
+        .note-switcher-list {
+          max-height: clamp(96px, calc(71.5vh - 440px), 220px);
         }
 
         .rail {
