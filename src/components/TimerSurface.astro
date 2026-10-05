@@ -14,21 +14,25 @@
   </div>
 
   <div class="active-note" hidden data-active-note data-open="false">
-    <button class="active-note-main" type="button" aria-expanded="false" data-active-note-open>
-      <span class="active-note-dot" aria-hidden="true"></span>
-      <strong data-active-note-title></strong>
-      <small class="active-note-more" hidden data-active-note-more></small>
-      <span class="active-note-dots" aria-hidden="true" data-active-note-dots></span>
-      <svg class="active-note-chevron" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m6 9 6 6 6-6" /></svg>
-    </button>
-    <button class="active-note-float" type="button" aria-label="Abrir nota flotante" data-note-float>
-      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M7 17 17 7M8 7h9v9" /></svg>
-    </button>
-    <div class="note-switcher" data-open="false" data-note-switcher>
-      <div class="note-switcher-list" data-note-switcher-list></div>
-      <div class="note-switcher-foot">
-        <button class="note-switcher-link" type="button" data-note-switch-action="new">+ Nueva tarea</button>
-        <button class="note-switcher-link muted" type="button" hidden data-note-switch-action="clear" data-note-clear></button>
+    <div class="active-note-card">
+      <div class="active-note-bar">
+        <button class="active-note-main" type="button" aria-expanded="false" data-active-note-open>
+          <span class="active-note-dot" aria-hidden="true"></span>
+          <strong data-active-note-title></strong>
+          <small class="active-note-more" hidden data-active-note-more></small>
+          <span class="active-note-dots" aria-hidden="true" data-active-note-dots></span>
+          <svg class="active-note-chevron" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m6 9 6 6 6-6" /></svg>
+        </button>
+        <button class="active-note-float" type="button" aria-label="Abrir nota flotante" data-note-float>
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M7 17 17 7M8 7h9v9" /></svg>
+        </button>
+      </div>
+      <div class="note-switcher" data-open="false" data-note-switcher>
+        <div class="note-switcher-list" data-note-switcher-list></div>
+        <div class="note-switcher-foot">
+          <button class="note-switcher-link" type="button" data-note-switch-action="new">+ Nueva tarea</button>
+          <button class="note-switcher-link muted" type="button" hidden data-note-switch-action="clear" data-note-clear></button>
+        </div>
       </div>
     </div>
   </div>

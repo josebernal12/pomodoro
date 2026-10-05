@@ -59,6 +59,7 @@
         noteSwitcher: document.querySelector("[data-note-switcher]"),
         noteSwitcherList: document.querySelector("[data-note-switcher-list]"),
         noteClear: document.querySelector("[data-note-clear]"),
+        focusCard: document.querySelector(".focus-card"),
         activeNoteTitle: document.querySelector("[data-active-note-title]"),
         toggle: document.querySelector('[data-action="toggle"]'),
         toggleLabel: document.querySelector("[data-toggle-label]"),
@@ -507,6 +508,8 @@
         elements.noteClear.hidden = !doneNotes.length;
         elements.noteClear.textContent = `Limpiar hechas · ${doneNotes.length}`;
 
+        updateNoteSwitcherSize();
+
         // FLIP: las filas se deslizan a su nuevo lugar en vez de saltar.
         if (canAnimate() && before.size) {
           elements.noteSwitcherList.querySelectorAll("[data-note-id]").forEach((row) => {
@@ -730,11 +733,29 @@
         );
       }
 
+      // La tarjeta se estira hacia abajo; si no cabe, el bloque del reloj sube con la misma
+      // curva en vez de que la lista se corte contra el borde de la pantalla.
+      function updateNoteSwitcherSize() {
+        const open = elements.noteSwitcher.dataset.open === "true";
+        const contentHeight = elements.noteSwitcher.scrollHeight;
+        elements.noteSwitcher.style.setProperty("--sw-h", `${contentHeight}px`);
+        let lift = 0;
+        if (open) {
+          const currentLift = parseFloat(elements.focusCard.style.getPropertyValue("--lift")) || 0;
+          const slotBottom = elements.activeNote.getBoundingClientRect().bottom + currentLift;
+          lift = Math.max(0, Math.round(slotBottom + contentHeight + 16 - window.innerHeight));
+        }
+        elements.focusCard.style.setProperty("--lift", `${lift}px`);
+      }
+
       function setNoteSwitcherOpen(open) {
         elements.noteSwitcher.dataset.open = open ? "true" : "false";
         elements.activeNote.dataset.open = open ? "true" : "false";
         elements.activeNoteOpen.setAttribute("aria-expanded", open ? "true" : "false");
+        updateNoteSwitcherSize();
       }
+
+      window.addEventListener("resize", updateNoteSwitcherSize);
 
       function showNoteSwitcher() {
         setNoteSwitcherOpen(true);

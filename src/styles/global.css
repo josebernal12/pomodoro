@@ -419,21 +419,44 @@
         font-size: clamp(1rem, 2vw, 1.18rem);
       }
 
+      /* .active-note es un hueco de altura fija: la tarjeta crece hacia abajo dentro de él
+         sin empujar el layout, así el reloj no salta al abrir la lista. */
       .active-note {
         position: relative;
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) auto;
-        align-items: center;
         width: min(380px, 88vw);
+        height: 50px;
         margin: clamp(14px, 2.4vh, 24px) auto 0;
-        padding: 5px 5px 5px 18px;
+      }
+
+      .active-note-card {
+        position: absolute;
+        top: 0;
+        right: 0;
+        left: 0;
+        z-index: 3;
+        overflow: hidden;
         border: 1px solid rgba(255, 247, 232, 0.2);
-        border-radius: 999px;
-        background: rgba(17, 14, 11, 0.42);
+        border-radius: 25px;
+        background: rgba(17, 14, 11, 0.5);
         box-shadow: 0 14px 40px rgba(0, 0, 0, 0.18);
         color: var(--room-ink);
         text-align: left;
         backdrop-filter: blur(16px);
+        transition:
+          background 300ms ease,
+          box-shadow 300ms ease;
+      }
+
+      .active-note[data-open="true"] .active-note-card {
+        background: rgba(17, 14, 11, 0.88);
+        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.4);
+      }
+
+      .active-note-bar {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+        padding: 4px 4px 4px 18px;
       }
 
       .active-note[hidden] {
@@ -544,57 +567,35 @@
         color: var(--room-ink);
       }
 
-      /* La lista flota fuera del flujo: abrirla no mueve el reloj. Hacia arriba por defecto;
-         al costado del chip cuando hay ancho de sobra. */
       .note-switcher {
-        position: absolute;
-        right: 0;
-        bottom: calc(100% + 10px);
-        left: 0;
-        z-index: 3;
-        padding: 8px;
-        border: 1px solid rgba(255, 247, 232, 0.2);
-        border-radius: 22px;
-        background: rgba(17, 14, 11, 0.92);
-        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.4);
+        height: 0;
         opacity: 0;
         visibility: hidden;
-        pointer-events: none;
-        transform: translateY(8px) scale(0.98);
-        transform-origin: bottom center;
+        overflow: hidden;
+        padding: 0 8px;
         transition:
-          opacity 200ms ease,
-          transform 260ms cubic-bezier(0.2, 0.8, 0.2, 1),
-          visibility 0s linear 260ms;
+          height 380ms cubic-bezier(0.2, 0.8, 0.2, 1),
+          opacity 260ms ease,
+          visibility 0s linear 380ms;
       }
 
       .note-switcher[data-open="true"] {
+        height: var(--sw-h, 0px);
         opacity: 1;
         visibility: visible;
-        pointer-events: auto;
-        transform: none;
         transition-delay: 0s;
       }
 
-      @media (min-width: 1280px) {
-        .note-switcher {
-          right: auto;
-          bottom: 0;
-          left: calc(100% + 16px);
-          width: 340px;
-          transform: translateX(-10px) scale(0.98);
-          transform-origin: left bottom;
-        }
-
-        .note-switcher[data-open="true"] {
-          transform: none;
-        }
+      .focus-card {
+        transform: translateY(calc(var(--lift, 0px) * -1));
+        transition: transform 380ms cubic-bezier(0.2, 0.8, 0.2, 1);
       }
 
       .note-switcher-list {
         display: grid;
         gap: 2px;
-        max-height: min(300px, 44vh);
+        padding-top: 4px;
+        max-height: min(240px, 32vh);
         overflow: auto;
         overscroll-behavior: contain;
       }
@@ -741,7 +742,7 @@
         justify-content: space-between;
         gap: 12px;
         margin-top: 6px;
-        padding: 8px 10px 2px;
+        padding: 8px 10px 10px;
         border-top: 1px solid rgba(255, 247, 232, 0.1);
       }
 
