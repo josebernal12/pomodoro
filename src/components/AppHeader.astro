@@ -7,12 +7,10 @@ const { appName } = Astro.props;
 ---
 
 <header class="topbar">
-  <div class="brand" aria-label={appName}>
-    <span class="brand-mark" aria-hidden="true"></span>
-    <span>{appName}</span>
-  </div>
-  <div class="today-pill" aria-live="polite">
-    <span>Hoy</span>
-    <strong class="today-count" data-today-count>0</strong>
+  <h2 class="sr-only">{appName}</h2>
+  <div class="today" aria-live="polite">
+    <span class="today-label">Hoy</span>
+    <span class="today-dots" aria-hidden="true" data-today-dots></span>
+    <span class="sr-only" data-today-count>0 ventanas hoy</span>
   </div>
 </header>

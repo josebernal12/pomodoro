@@ -29,10 +29,10 @@
       </div>
       <div class="note-switcher" data-open="false" data-note-switcher>
         <div class="note-switcher-list" data-note-switcher-list></div>
-        <div class="note-switcher-foot">
-          <button class="note-switcher-link" type="button" data-note-switch-action="new">+ Nueva tarea</button>
-          <button class="note-switcher-link muted" type="button" hidden data-note-switch-action="clear" data-note-clear></button>
-        </div>
+        <form class="note-switcher-foot" autocomplete="off" data-note-quick-add>
+          <input class="note-switcher-input" type="text" maxlength="90" placeholder="+ Escribe una tarea" aria-label="Nueva tarea" data-note-quick-input />
+          <kbd class="note-switcher-hint" aria-hidden="true">Enter</kbd>
+        </form>
       </div>
     </div>
   </div>

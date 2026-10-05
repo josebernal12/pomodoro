@@ -25,6 +25,7 @@
         longBreakMinutes: 15,
         alarm: "bell",
         ambientVolume: 45,
+        ambientOn: true,
         ostVolume: 35,
         ostTrackId: "",
         completedToday: 0,
@@ -49,6 +50,12 @@
         modeLabel: document.querySelector("[data-mode-label]"),
         message: document.querySelector("[data-message]"),
         todayCount: document.querySelector("[data-today-count]"),
+        todayDots: document.querySelector("[data-today-dots]"),
+        rail: document.querySelector("[data-rail]"),
+        railToggle: document.querySelector("[data-rail-toggle]"),
+        ambientToggle: document.querySelector("[data-ambient-toggle]"),
+        noteQuickAdd: document.querySelector("[data-note-quick-add]"),
+        noteQuickInput: document.querySelector("[data-note-quick-input]"),
         activeNote: document.querySelector("[data-active-note]"),
         activeNoteOpen: document.querySelector("[data-active-note-open]"),
         activeNoteMore: document.querySelector("[data-active-note-more]"),
@@ -58,7 +65,6 @@
         noteFloat: document.querySelector("[data-note-float]"),
         noteSwitcher: document.querySelector("[data-note-switcher]"),
         noteSwitcherList: document.querySelector("[data-note-switcher-list]"),
-        noteClear: document.querySelector("[data-note-clear]"),
         focusCard: document.querySelector(".focus-card"),
         activeNoteTitle: document.querySelector("[data-active-note-title]"),
         toggle: document.querySelector('[data-action="toggle"]'),
@@ -164,6 +170,7 @@
             merged.sceneId = defaults.sceneId;
           }
           merged.ostVolume = clampNumber(merged.ostVolume, 0, 100, defaults.ostVolume);
+          merged.ambientOn = merged.ambientOn !== false;
           if (typeof merged.ostTrackId !== "string") merged.ostTrackId = "";
           merged.extensions = { ...defaults.extensions, ...(merged.extensions || {}) };
           merged.notebook = normalizeNotebook(merged.notebook);
@@ -335,6 +342,28 @@
 
       let lastRingProgress = 0;
 
+      // Un punto por ventana completada hoy; los huecos se agrandan de 4 en 4.
+      function renderTodayDots() {
+        const done = state.completedToday;
+        elements.todayCount.textContent = `${done} ${done === 1 ? "ventana" : "ventanas"} hoy`;
+        const shown = Math.min(done, 12);
+        const total = Math.min(12, Math.max(4, Math.ceil((done + 1) / 4) * 4));
+        const signature = `${shown}/${total}/${done}`;
+        if (elements.todayDots.dataset.signature === signature) return;
+        elements.todayDots.dataset.signature = signature;
+        const dots = Array.from({ length: total }, (_, index) => {
+          const dot = document.createElement("i");
+          if (index < shown) dot.dataset.done = "true";
+          return dot;
+        });
+        if (done > 12) {
+          const extra = document.createElement("small");
+          extra.textContent = `+${done - 12}`;
+          dots.push(extra);
+        }
+        elements.todayDots.replaceChildren(...dots);
+      }
+
       function renderRing() {
         const totalSeconds = currentTotalSeconds();
         const progress = totalSeconds > 0 ? Math.min(100, Math.max(0, ((totalSeconds - secondsLeft) / totalSeconds) * 100)) : 0;
@@ -347,12 +376,13 @@
 
       function renderActiveNoteChip(activeNote) {
         const pending = state.notebook.notes.filter((note) => !note.completed).length;
-        elements.activeNote.dataset.state = activeNote ? "active" : "done";
+        const isEmpty = state.notebook.notes.length === 0;
+        elements.activeNote.dataset.state = activeNote ? "active" : isEmpty ? "empty" : "done";
         elements.noteFloat.hidden = !activeNote;
         if (!activeNote) {
-          elements.activeNoteTitle.textContent = "Todo listo por ahora";
+          elements.activeNoteTitle.textContent = isEmpty ? "Añade tu primera tarea" : "Todo listo por ahora";
           elements.activeNoteOpen.title = "";
-          elements.activeNoteOpen.setAttribute("aria-label", "Todo listo. Ver tareas");
+          elements.activeNoteOpen.setAttribute("aria-label", isEmpty ? "Añadir una tarea" : "Todo listo. Ver tareas");
           elements.activeNoteMore.hidden = true;
           elements.activeNoteDots.replaceChildren();
           return;
@@ -378,9 +408,10 @@
 
       function render() {
         updateAmbientVolume();
+        renderAmbientToggle();
         elements.timer.textContent = formatTime(secondsLeft);
         renderRing();
-        elements.todayCount.textContent = state.completedToday.toString();
+        renderTodayDots();
         elements.modeLabel.textContent = mode === "focus" ? "Ventana abierta" : "Descanso";
         elements.shell.dataset.mode = mode;
         elements.shell.dataset.layout = state.layoutMode;
@@ -392,7 +423,7 @@
         elements.notebookToggle.hidden = !state.extensions.notebook;
         elements.shell.dataset.notebook = state.extensions.notebook ? "enabled" : "disabled";
         const activeNote = getActiveNote();
-        const shouldShowActiveNote = Boolean(state.extensions.notebook && state.notebook.notes.length);
+        const shouldShowActiveNote = Boolean(state.extensions.notebook);
         const activeNoteWasHidden = elements.activeNote.hidden;
         elements.activeNote.hidden = !shouldShowActiveNote;
         if (shouldShowActiveNote) renderActiveNoteChip(activeNote);
@@ -438,6 +469,7 @@
       }
 
       let noteSwitcherSignature = "";
+      let doneNotesExpanded = false;
 
       function renderNoteSwitcher() {
         const { notes, activeNoteId } = state.notebook;
@@ -445,7 +477,10 @@
         const pendingNotes = notes.filter((note) => !note.completed);
         // render() corre cada segundo: solo se reconstruye la lista cuando cambia algo,
         // para no perder el hover ni los clics a medias.
-        const signature = JSON.stringify(notes.map((note) => [note.id, note.title, note.completed, note.pomodoros])) + activeNoteId;
+        const signature =
+          JSON.stringify(notes.map((note) => [note.id, note.title, note.completed, note.pomodoros])) +
+          activeNoteId +
+          doneNotesExpanded;
         if (signature === noteSwitcherSignature) return;
         noteSwitcherSignature = signature;
 
@@ -496,17 +531,41 @@
           elements.noteSwitcherList.append(row);
         };
 
-        // Las hechas se quedan arriba, apagadas, hasta que las limpies.
-        doneNotes.forEach(addRow);
-        if (doneNotes.length && pendingNotes.length) {
-          const divider = document.createElement("div");
-          divider.className = "note-switcher-divider";
-          elements.noteSwitcherList.append(divider);
+        if (!notes.length) {
+          const empty = document.createElement("p");
+          empty.className = "note-switcher-empty";
+          empty.textContent = "Aquí van tus tareas. Escribe la primera abajo.";
+          elements.noteSwitcherList.append(empty);
+        }
+
+        // Las hechas se plegan en una sola fila y se quedan hasta que las limpies.
+        if (doneNotes.length) {
+          const fold = document.createElement("button");
+          fold.type = "button";
+          fold.className = "note-switcher-fold";
+          fold.dataset.noteSwitchAction = "fold";
+          fold.setAttribute("aria-expanded", doneNotesExpanded.toString());
+          fold.innerHTML =
+            '<span class="note-switcher-fold-check"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg></span>' +
+            `<strong>${doneNotes.length} ${doneNotes.length === 1 ? "hecha" : "hechas"}</strong>` +
+            '<svg class="note-switcher-fold-chevron" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m9 6 6 6-6 6" /></svg>';
+          elements.noteSwitcherList.append(fold);
+          if (doneNotesExpanded) {
+            doneNotes.forEach(addRow);
+            const clear = document.createElement("button");
+            clear.type = "button";
+            clear.className = "note-switcher-link muted note-switcher-clear";
+            clear.dataset.noteSwitchAction = "clear";
+            clear.textContent = "Limpiar hechas";
+            elements.noteSwitcherList.append(clear);
+          }
+          if (pendingNotes.length) {
+            const divider = document.createElement("div");
+            divider.className = "note-switcher-divider";
+            elements.noteSwitcherList.append(divider);
+          }
         }
         pendingNotes.forEach(addRow);
-
-        elements.noteClear.hidden = !doneNotes.length;
-        elements.noteClear.textContent = `Limpiar hechas · ${doneNotes.length}`;
 
         updateNoteSwitcherSize();
 
@@ -944,6 +1003,7 @@
       }
 
       function startAmbient() {
+        if (!state.ambientOn) return;
         updateAmbientVolume();
         elements.ambientAudio.play().catch(() => {
           statusMessage = "Toca Play otra vez para activar el audio del navegador.";
@@ -958,6 +1018,31 @@
       function updateAmbientVolume() {
         elements.ambientAudio.volume = state.ambientVolume / 100;
       }
+
+      function renderAmbientToggle() {
+        elements.ambientToggle.setAttribute("aria-pressed", state.ambientOn.toString());
+        elements.ambientToggle.dataset.active = state.ambientOn ? "true" : "false";
+        elements.ambientToggle.dataset.tip = state.ambientOn ? "Lluvia" : "Lluvia apagada";
+      }
+
+      elements.ambientToggle.addEventListener("click", () => {
+        state.ambientOn = !state.ambientOn;
+        saveState();
+        renderAmbientToggle();
+        if (!state.ambientOn) stopAmbient();
+        else if (running) startAmbient();
+      });
+
+      // En móvil el riel se pliega a un botón: se abre al tocarlo y se cierra al elegir algo.
+      function setRailOpen(open) {
+        elements.rail.dataset.open = open ? "true" : "false";
+        elements.railToggle.setAttribute("aria-expanded", open ? "true" : "false");
+      }
+
+      elements.railToggle.addEventListener("click", () => setRailOpen(elements.rail.dataset.open !== "true"));
+      elements.rail.addEventListener("click", (event) => {
+        if (event.target.closest(".rail-button")) setRailOpen(false);
+      });
 
       function getSceneUrl() {
         return `${window.location.origin}/scenes/${state.sceneId}/background.webp`;
@@ -1677,11 +1762,9 @@
         const button = event.target.closest("[data-note-switch-action]");
         if (!button) return;
         const action = button.dataset.noteSwitchAction;
-        if (action === "new") {
-          hideNoteSwitcher();
-          closePanels("notebook");
-          showPanel(elements.notebookPanel);
-          elements.notebookPanel.querySelector("[data-notebook-draft='title']")?.focus();
+        if (action === "fold") {
+          doneNotesExpanded = !doneNotesExpanded;
+          renderNoteSwitcher();
           return;
         }
         if (action === "clear") {
@@ -1705,8 +1788,35 @@
         if (action === "float") openFloatingTimer("note");
       });
 
+      elements.noteQuickAdd.addEventListener("submit", (event) => {
+        event.preventDefault();
+        const title = elements.noteQuickInput.value.trim();
+        if (!title) return;
+        const note = {
+          id: `note-${Date.now()}`,
+          title,
+          body: "",
+          createdAt: Date.now(),
+          completed: false,
+          pomodoros: 0,
+        };
+        // Se añade al final de los pendientes y solo pasa a ser la actual si no había ninguna.
+        state.notebook.notes.push(note);
+        if (!getActiveNote()) state.notebook.activeNoteId = note.id;
+        elements.noteQuickInput.value = "";
+        saveState();
+        render();
+        const list = elements.noteSwitcherList;
+        list.scrollTo({ top: list.scrollHeight, behavior: canAnimate() ? "smooth" : "auto" });
+        const row = list.querySelector(`[data-note-id="${note.id}"]`);
+        if (row && canAnimate()) gsap.from(row, { opacity: 0, y: 10, duration: 0.32, ease: "power2.out", clearProps: "opacity,transform" });
+      });
+
       document.addEventListener("keydown", (event) => {
-        if (event.key === "Escape") hideNoteSwitcher();
+        if (event.key === "Escape") {
+          hideNoteSwitcher();
+          setRailOpen(false);
+        }
       });
 
       document.addEventListener("pointerdown", (event) => {
@@ -1716,6 +1826,7 @@
         const clickedToggle = event.target.closest(
           "[data-settings-toggle], [data-windows-toggle], [data-extensions-toggle], [data-notebook-toggle], [data-ost-toggle], [data-active-note], [data-note-float]",
         );
+        if (!event.target.closest("[data-rail]")) setRailOpen(false);
         if (!clickedInsidePanel && !clickedToggle) {
           closePanels("");
           hideNoteSwitcher();
