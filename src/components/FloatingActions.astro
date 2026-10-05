@@ -1,25 +1,23 @@
-<button class="icon-button windows-toggle" type="button" aria-label="Abrir ventanas" data-windows-toggle>
-  <img class="floating-cat-icon" src="/icons/cats/window.png" alt="" aria-hidden="true" />
-</button>
+<nav class="rail" aria-label="Acciones">
+  <button class="rail-button" type="button" aria-label="Abrir ambientes" data-tip="Ambientes" data-windows-toggle>
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="4" y="3" width="16" height="18" rx="2.5" /><path d="M12 3v18M4 12h16" /></svg>
+  </button>
 
-<button class="icon-button notebook-toggle" type="button" aria-label="Abrir cuaderno" data-notebook-toggle hidden>
-  <span class="notebook-icon" aria-hidden="true"></span>
-</button>
+  <button class="rail-button" type="button" aria-label="Abrir cuaderno" data-tip="Cuaderno" data-notebook-toggle hidden>
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H19v15H6.5A1.5 1.5 0 0 0 5 19.5zM5 19.5A1.5 1.5 0 0 0 6.5 21H19v-3M9 8h6" /></svg>
+  </button>
 
-<button class="icon-button ost-toggle" type="button" aria-label="Abrir banda sonora" data-ost-toggle>
-  <span aria-hidden="true">♫</span>
-</button>
+  <button class="rail-button" type="button" aria-label="Abrir extensiones" data-tip="Extensiones" data-extensions-toggle>
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="4" y="4" width="6.5" height="6.5" rx="1.5" /><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5" /><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5" /><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5" /></svg>
+  </button>
 
-<button class="icon-button extensions-toggle" type="button" aria-label="Abrir extensiones" data-extensions-toggle>
-  <span class="extensions-icon" aria-hidden="true"></span>
-</button>
+  <button class="rail-button" type="button" aria-label="Abrir timer flotante" data-tip="Timer flotante" data-floating-toggle>
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M7 17 17 7M8 7h9v9" /></svg>
+  </button>
 
-<button class="icon-button settings-toggle" type="button" aria-label="Abrir ajustes" data-settings-toggle>
-  <span aria-hidden="true">&#9881;</span>
-</button>
-
-<button class="icon-button floating-toggle" type="button" aria-label="Abrir timer flotante" data-floating-toggle>
-  <span aria-hidden="true">&#8599;</span>
-</button>
+  <button class="rail-button settings-toggle" type="button" aria-label="Abrir ajustes" data-tip="Ajustes" data-settings-toggle>
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1" /><circle cx="15" cy="6" r="2" /><circle cx="9" cy="12" r="2" /><circle cx="17" cy="18" r="2" /></svg>
+  </button>
+</nav>
 
 <button class="install-button" type="button" hidden data-install-button>Instalar app</button>

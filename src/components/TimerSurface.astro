@@ -1,32 +1,48 @@
 <section class="focus-card" aria-labelledby="timer-heading">
-  <p class="mode-label" data-mode-label>Ventana abierta</p>
-  <h1 id="timer-heading" class="timer" data-timer>25:00</h1>
-  <p class="message" data-message>Abre la ventana. Entra en ritmo.</p>
+  <div class="timer-ring">
+    <svg class="ring-svg" viewBox="0 0 400 400" aria-hidden="true" focusable="false">
+      <circle class="ring-track" cx="200" cy="200" r="186" />
+      <circle class="ring-progress" cx="200" cy="200" r="186" pathLength="100" transform="rotate(-90 200 200)" data-ring-progress />
+      <g data-ring-head>
+        <circle class="ring-dot" cx="200" cy="14" r="6" />
+      </g>
+    </svg>
+    <div class="ring-content">
+      <p class="mode-label" data-mode-label>Ventana abierta</p>
+      <h1 id="timer-heading" class="timer" data-timer>25:00</h1>
+    </div>
+  </div>
+
   <div class="active-note" hidden data-active-note>
     <button class="active-note-main" type="button" data-active-note-open>
-      <span data-active-note-meta>Nota activa</span>
+      <span class="active-note-dot" aria-hidden="true"></span>
       <strong data-active-note-title></strong>
-      <small data-active-note-body></small>
+      <small class="active-note-more" hidden data-active-note-more></small>
+      <span class="active-note-dots" aria-hidden="true" data-active-note-dots></span>
     </button>
     <button class="active-note-float" type="button" aria-label="Abrir nota flotante" data-note-float>
-      <span aria-hidden="true">&#8599;</span>
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M7 17 17 7M8 7h9v9" /></svg>
     </button>
     <div class="note-switcher" hidden data-note-switcher></div>
   </div>
+
   <div class="controls" aria-label="Controles del temporizador">
-    <button class="control-button primary" type="button" data-action="toggle">
-      <img class="control-icon" src="/icons/cats/play.png" alt="" aria-hidden="true" data-toggle-icon />
-      <span data-toggle-label>Play</span>
+    <button class="control-button" type="button" aria-label="Reiniciar" title="Reiniciar" data-action="reset">
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5" /></svg>
+      <span class="sr-only">Reiniciar</span>
     </button>
-    <button class="control-button" type="button" data-action="reset">
-      <img class="control-icon" src="/icons/cats/reset.png" alt="" aria-hidden="true" />
-      <span>Reiniciar</span>
+    <button class="control-button primary" type="button" data-action="toggle" data-state="play">
+      <svg class="icon-play" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 5.5v13l11-6.5z" /></svg>
+      <svg class="icon-pause" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 5v14M16 5v14" /></svg>
+      <span class="sr-only" data-toggle-label>Play</span>
     </button>
-    <button class="control-button" type="button" data-action="skip">
-      <img class="control-icon control-icon-wide" src="/icons/cats/skip.png" alt="" aria-hidden="true" />
-      <span>Saltar</span>
+    <button class="control-button" type="button" aria-label="Saltar" title="Saltar" data-action="skip">
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 5.5v13l9-6.5zM19 5v14" /></svg>
+      <span class="sr-only">Saltar</span>
     </button>
   </div>
+
+  <p class="message" data-message>Abre la ventana. Entra en ritmo.</p>
 </section>
 
 <div class="completion-toast" data-completion-toast data-visible="false" aria-live="polite">

@@ -1,4 +1,4 @@
-const CACHE_NAME = "ventana-pomodoro-v2";
+const CACHE_NAME = "ventana-pomodoro-v3";
 const APP_SHELL = [
   "/",
   "/manifest.webmanifest",
@@ -9,12 +9,7 @@ const APP_SHELL = [
   "/audio/rain-window.mp3",
   "/icons/icon-192.png",
   "/icons/icon-512.png",
-  "/icons/icon-maskable-512.png",
-  "/icons/cats/play.png",
-  "/icons/cats/pause.png",
-  "/icons/cats/reset.png",
-  "/icons/cats/skip.png",
-  "/icons/cats/window.png"
+  "/icons/icon-maskable-512.png"
 ];
 
 self.addEventListener("install", (event) => {

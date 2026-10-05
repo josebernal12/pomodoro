@@ -51,13 +51,14 @@
         todayCount: document.querySelector("[data-today-count]"),
         activeNote: document.querySelector("[data-active-note]"),
         activeNoteOpen: document.querySelector("[data-active-note-open]"),
-        activeNoteMeta: document.querySelector("[data-active-note-meta]"),
-        activeNoteBody: document.querySelector("[data-active-note-body]"),
+        activeNoteMore: document.querySelector("[data-active-note-more]"),
+        activeNoteDots: document.querySelector("[data-active-note-dots]"),
+        ringProgress: document.querySelector("[data-ring-progress]"),
+        ringHead: document.querySelector("[data-ring-head]"),
         noteFloat: document.querySelector("[data-note-float]"),
         noteSwitcher: document.querySelector("[data-note-switcher]"),
         activeNoteTitle: document.querySelector("[data-active-note-title]"),
         toggle: document.querySelector('[data-action="toggle"]'),
-        toggleIcon: document.querySelector("[data-toggle-icon]"),
         toggleLabel: document.querySelector("[data-toggle-label]"),
         reset: document.querySelector('[data-action="reset"]'),
         skip: document.querySelector('[data-action="skip"]'),
@@ -74,6 +75,10 @@
         ostClose: document.querySelector("[data-ost-close]"),
         ostAudio: document.querySelector("[data-ost-audio]"),
         ostPlay: document.querySelector("[data-ost-play]"),
+        ostPill: document.querySelector("[data-ost-pill]"),
+        ostPillName: document.querySelector("[data-ost-pill-name]"),
+        ostPillPlay: document.querySelector("[data-ost-pill-play]"),
+        ostPillVolume: document.querySelector("[data-ost-pill-volume]"),
         ostVolume: document.querySelector("[data-ost-volume]"),
         ostUpload: document.querySelector("[data-ost-upload]"),
         ostList: document.querySelector("[data-ost-track-list]"),
@@ -109,6 +114,7 @@
       let mode = "focus";
       let cycleFocusCount = 0;
       let secondsLeft = state.focusMinutes * 60;
+      let roundTotalSeconds = secondsLeft;
       let running = false;
       let intervalId = null;
       let audioContext = null;
@@ -221,6 +227,7 @@
         elements.ostCount.textContent = ostTracks.length.toString();
         const currentTrack = ostTracks.find((track) => track.id === state.ostTrackId);
         elements.ostCurrent.textContent = currentTrack?.name || "Ninguna seleccionada";
+        elements.ostPillName.textContent = currentTrack?.name || "Elegir música";
         if (!ostTracks.length) {
           const empty = document.createElement("p");
           empty.className = "ost-empty";
@@ -314,16 +321,60 @@
         return `${minutes}:${seconds}`;
       }
 
+      function startRound(seconds) {
+        secondsLeft = seconds;
+        roundTotalSeconds = seconds;
+      }
+
+      function currentTotalSeconds() {
+        return roundTotalSeconds;
+      }
+
+      let lastRingProgress = 0;
+
+      function renderRing() {
+        const totalSeconds = currentTotalSeconds();
+        const progress = totalSeconds > 0 ? Math.min(100, Math.max(0, ((totalSeconds - secondsLeft) / totalSeconds) * 100)) : 0;
+        // Un reinicio retrocede el anillo: se salta la transicion para que no "rebobine" despacio.
+        elements.ringProgress.classList.toggle("is-snapping", progress < lastRingProgress);
+        elements.ringProgress.style.strokeDashoffset = (100 - progress).toFixed(2);
+        elements.ringHead.setAttribute("transform", `rotate(${(progress * 3.6).toFixed(2)} 200 200)`);
+        lastRingProgress = progress;
+      }
+
+      function renderActiveNoteChip(activeNote) {
+        const pending = state.notebook.notes.filter((note) => !note.completed).length;
+        elements.activeNoteTitle.textContent = activeNote.title;
+        elements.activeNoteOpen.title = activeNote.body || "";
+        elements.activeNoteOpen.setAttribute(
+          "aria-label",
+          pending > 1 ? `Tarea actual: ${activeNote.title}. ${pending} pendientes` : `Tarea actual: ${activeNote.title}`,
+        );
+        elements.activeNoteMore.hidden = pending <= 1;
+        elements.activeNoteMore.textContent = `+${pending - 1}`;
+        const done = Math.min(8, activeNote.pomodoros || 0);
+        const total = Math.min(8, Math.max(3, done + 1));
+        elements.activeNoteDots.replaceChildren(
+          ...Array.from({ length: total }, (_, index) => {
+            const dot = document.createElement("i");
+            if (index < done) dot.dataset.done = "true";
+            return dot;
+          }),
+        );
+      }
+
       function render() {
         updateAmbientVolume();
         elements.timer.textContent = formatTime(secondsLeft);
+        renderRing();
         elements.todayCount.textContent = state.completedToday.toString();
         elements.modeLabel.textContent = mode === "focus" ? "Ventana abierta" : "Descanso";
         elements.shell.dataset.mode = mode;
         elements.shell.dataset.layout = state.layoutMode;
         elements.shell.dataset.scene = state.sceneId;
+        elements.shell.dataset.running = running ? "true" : "false";
         elements.toggleLabel.textContent = running ? "Pausa" : "Play";
-        elements.toggleIcon.src = running ? "/icons/cats/pause.png" : "/icons/cats/play.png";
+        elements.toggle.dataset.state = running ? "pause" : "play";
         elements.message.textContent = statusMessage;
         elements.notebookToggle.hidden = !state.extensions.notebook;
         elements.shell.dataset.notebook = state.extensions.notebook ? "enabled" : "disabled";
@@ -331,12 +382,7 @@
         const shouldShowActiveNote = Boolean(state.extensions.notebook && activeNote);
         const activeNoteWasHidden = elements.activeNote.hidden;
         elements.activeNote.hidden = !shouldShowActiveNote;
-        if (activeNote) {
-          const taskCount = state.notebook.notes.filter((note) => !note.completed).length;
-          elements.activeNoteMeta.textContent = taskCount > 1 ? `Tarea actual · ${taskCount} pendientes` : "Tarea actual";
-          elements.activeNoteTitle.textContent = activeNote.title;
-          elements.activeNoteBody.textContent = activeNote.body || "Sin detalle.";
-        }
+        if (activeNote) renderActiveNoteChip(activeNote);
         if (shouldShowActiveNote && (activeNoteWasHidden || lastActiveNoteId !== activeNote.id)) {
           animateActiveNote();
         }
@@ -548,6 +594,31 @@
         });
       }
 
+      function getPanelToggleMap() {
+        return {
+          extensions: elements.extensionsToggle,
+          notebook: elements.notebookToggle,
+          ost: elements.ostToggle,
+          settings: elements.settingsToggle,
+          windows: elements.windowsToggle,
+        };
+      }
+
+      function syncPanelToggles() {
+        const toggles = getPanelToggleMap();
+        Object.entries(getPanelMap()).forEach(([key, panel]) => {
+          const toggle = toggles[key];
+          if (!toggle) return;
+          toggle.dataset.active = panel.hidden ? "false" : "true";
+          toggle.setAttribute("aria-expanded", panel.hidden ? "false" : "true");
+        });
+      }
+
+      const panelObserver = new MutationObserver(syncPanelToggles);
+      Object.values(getPanelMap()).forEach((panel) => {
+        if (panel) panelObserver.observe(panel, { attributes: true, attributeFilter: ["hidden"] });
+      });
+
       function togglePanel(key) {
         const panel = getPanelMap()[key];
         if (!panel) return;
@@ -728,12 +799,12 @@
           const key = todayKey();
           state.streakDays[key] = (state.streakDays[key] || 0) + 1;
           mode = "break";
-          secondsLeft = (cycleFocusCount % 4 === 0 ? state.longBreakMinutes : state.shortBreakMinutes) * 60;
+          startRound((cycleFocusCount % 4 === 0 ? state.longBreakMinutes : state.shortBreakMinutes) * 60);
           statusMessage = `${quotes[(state.completedToday - 1) % quotes.length]} Respira. Estirate. Toma agua.`;
           showCompletionMoment();
         } else {
           mode = "focus";
-          secondsLeft = state.focusMinutes * 60;
+          startRound(state.focusMinutes * 60);
           statusMessage = focusMessages.running;
         }
         pulseRoundChange();
@@ -744,11 +815,11 @@
         playAlarm();
         if (mode === "focus") {
           mode = "break";
-          secondsLeft = state.shortBreakMinutes * 60;
+          startRound(state.shortBreakMinutes * 60);
           statusMessage = breakMessages.idle;
         } else {
           mode = "focus";
-          secondsLeft = state.focusMinutes * 60;
+          startRound(state.focusMinutes * 60);
           statusMessage = focusMessages.idle;
         }
         running = false;
@@ -758,7 +829,7 @@
       }
 
       function resetCurrentMode() {
-        secondsLeft = (mode === "focus" ? state.focusMinutes : state.shortBreakMinutes) * 60;
+        startRound((mode === "focus" ? state.focusMinutes : state.shortBreakMinutes) * 60);
         running = false;
         statusMessage = mode === "focus" ? focusMessages.idle : breakMessages.idle;
         stopAmbient();
@@ -1190,7 +1261,7 @@
 
       function updateFloatingTimer() {
         if (!floatingWindow || floatingWindow.closed) return;
-        const totalSeconds = (mode === "focus" ? state.focusMinutes : cycleFocusCount % 4 === 0 ? state.longBreakMinutes : state.shortBreakMinutes) * 60;
+        const totalSeconds = currentTotalSeconds();
         const elapsed = Math.max(0, totalSeconds - secondsLeft);
         const progress = totalSeconds > 0 ? Math.min(100, Math.round((elapsed / totalSeconds) * 100)) : 0;
         floatingWindow.document.body.style.setProperty("--float-scene", `url("${getSceneUrl()}")`);
@@ -1327,16 +1398,23 @@
       elements.ostToggle.addEventListener("click", () => togglePanel("ost"));
       elements.ostClose.addEventListener("click", () => hidePanel(elements.ostPanel));
       elements.ostVolume.value = state.ostVolume;
+      elements.ostPillVolume.value = state.ostVolume;
       elements.ostAudio.volume = state.ostVolume / 100;
-      elements.ostVolume.addEventListener("input", () => {
-        state.ostVolume = clampNumber(elements.ostVolume.value, 0, 100, defaults.ostVolume);
-        elements.ostAudio.volume = state.ostVolume / 100;
-        saveState();
+      [elements.ostVolume, elements.ostPillVolume].forEach((slider) => {
+        slider.addEventListener("input", () => {
+          state.ostVolume = clampNumber(slider.value, 0, 100, defaults.ostVolume);
+          elements.ostVolume.value = state.ostVolume;
+          elements.ostPillVolume.value = state.ostVolume;
+          elements.ostAudio.volume = state.ostVolume / 100;
+          saveState();
+        });
       });
-      elements.ostPlay.addEventListener("click", async () => {
+      async function toggleOstPlayback() {
         if (elements.ostAudio.paused) {
           if (!elements.ostAudio.src) {
             elements.ostStatus.textContent = "Añade una pista para escucharla";
+            // Sin pista elegida, la píldora lleva a la biblioteca en vez de quedarse muda.
+            if (elements.ostPanel.hidden) togglePanel("ost");
             return;
           }
           try {
@@ -1347,17 +1425,19 @@
         } else {
           elements.ostAudio.pause();
         }
-      });
-      elements.ostAudio.addEventListener("play", () => {
-        elements.ostPlay.textContent = "Ⅱ";
-        elements.ostPlay.setAttribute("aria-label", "Pausar música");
+      }
+      elements.ostPlay.addEventListener("click", toggleOstPlayback);
+      elements.ostPillPlay.addEventListener("click", toggleOstPlayback);
+      function syncOstPlaybackUi() {
+        const playing = !elements.ostAudio.paused;
+        elements.ostPlay.textContent = playing ? "Ⅱ" : "▶";
+        elements.ostPlay.setAttribute("aria-label", playing ? "Pausar música" : "Reproducir música");
+        elements.ostPillPlay.setAttribute("aria-label", playing ? "Pausar música" : "Reproducir música");
+        elements.ostPill.dataset.playing = playing ? "true" : "false";
         renderOstTracks();
-      });
-      elements.ostAudio.addEventListener("pause", () => {
-        elements.ostPlay.textContent = "▶";
-        elements.ostPlay.setAttribute("aria-label", "Reproducir música");
-        renderOstTracks();
-      });
+      }
+      elements.ostAudio.addEventListener("play", syncOstPlaybackUi);
+      elements.ostAudio.addEventListener("pause", syncOstPlaybackUi);
       elements.ostUpload.addEventListener("change", async () => {
         const files = Array.from(elements.ostUpload.files || []).filter((file) => file.type.startsWith("audio/") || /\.(mp3|ogg|wav|m4a|flac)$/i.test(file.name));
         if (!files.length) return;
