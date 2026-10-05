@@ -1,0 +1,38 @@
+---
+const windows = [
+  { id: "cat-rain-window", label: "Lluvia nocturna" },
+  { id: "cat-sunset-room", label: "Atardecer suave" },
+  { id: "cat-tea-room", label: "Jardin con lluvia" },
+  { id: "cat-snow-window", label: "Nieve tranquila" },
+];
+---
+
+<aside class="windows-panel" hidden data-windows-panel aria-label="Ventanas">
+  <div class="windows-head">
+    <div>
+      <h2 class="windows-title">Elige tu ambiente</h2>
+      <p class="windows-caption">Un pequeño cambio de paisaje.</p>
+    </div>
+    <button class="window-close-button" type="button" aria-label="Cerrar ventanas" data-windows-close>
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+
+  <div class="window-grid">
+    {
+      windows.map((window) => (
+        <button
+          class="window-card"
+          type="button"
+          data-scene-option={window.id}
+          aria-label={window.label}
+        >
+          <img class="window-image" src={`/scenes/${window.id}/background.webp`} alt="" loading="lazy" decoding="async" />
+          <span class="window-preview" aria-hidden="true"></span>
+          <span class="window-name">{window.label}</span>
+          <span class="window-state">Activa</span>
+        </button>
+      ))
+    }
+  </div>
+</aside>

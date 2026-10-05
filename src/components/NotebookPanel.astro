@@ -1,0 +1,29 @@
+<aside class="notebook-panel" hidden data-notebook-panel aria-label="Cuaderno de trabajo">
+  <div class="panel-head">
+    <div>
+      <h2 class="panel-title">Cuaderno</h2>
+      <p class="notebook-caption">Un paso a la vez, a tu ritmo.</p>
+    </div>
+    <button class="panel-close-button" type="button" aria-label="Cerrar cuaderno" data-notebook-close>
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+
+  <form class="notebook-form" data-notebook-form>
+    <label class="notebook-field notebook-field-primary">
+      <span>¿En qué vas a trabajar?</span>
+      <input data-notebook-draft="title" type="text" maxlength="90" placeholder="Preparar presentación" />
+    </label>
+    <label class="notebook-field">
+      <span>Detalle <small>opcional</small></span>
+      <textarea data-notebook-draft="body" rows="2" maxlength="500" placeholder="Una idea o el siguiente paso…"></textarea>
+    </label>
+    <button class="notebook-add-button" type="submit"><span aria-hidden="true">＋</span> Añadir tarea</button>
+  </form>
+
+  <div class="notebook-list-head">
+    <span>Tu lista</span>
+    <span data-task-summary>0 tareas</span>
+  </div>
+  <div class="notes-list" data-notes-list aria-live="polite"></div>
+</aside>

@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Ventana Pomodoro">
+  <defs>
+    <linearGradient id="wall" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#2a2119"/>
+      <stop offset="1" stop-color="#0f1510"/>
+    </linearGradient>
+    <linearGradient id="glass" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#d8e2dd"/>
+      <stop offset="0.55" stop-color="#5d7968"/>
+      <stop offset="1" stop-color="#1f3328"/>
+    </linearGradient>
+    <radialGradient id="lamp" cx="0.18" cy="0.82" r="0.65">
+      <stop offset="0" stop-color="#f4b267" stop-opacity="0.95"/>
+      <stop offset="0.48" stop-color="#8f6336" stop-opacity="0.42"/>
+      <stop offset="1" stop-color="#17130f" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#wall)"/>
+  <rect width="512" height="512" rx="112" fill="url(#lamp)"/>
+  <rect x="98" y="92" width="316" height="238" rx="28" fill="#2b1d13"/>
+  <rect x="124" y="118" width="122" height="186" rx="10" fill="url(#glass)"/>
+  <rect x="266" y="118" width="122" height="186" rx="10" fill="url(#glass)"/>
+  <rect x="246" y="96" width="20" height="232" rx="8" fill="#1c130d"/>
+  <rect x="116" y="315" width="280" height="20" rx="10" fill="#5e3b20"/>
+  <circle cx="160" cy="162" r="5" fill="#f4f0e7" opacity="0.52"/>
+  <circle cx="185" cy="202" r="3" fill="#f4f0e7" opacity="0.38"/>
+  <circle cx="212" cy="246" r="4" fill="#f4f0e7" opacity="0.42"/>
+  <circle cx="306" cy="156" r="4" fill="#f4f0e7" opacity="0.45"/>
+  <circle cx="344" cy="224" r="5" fill="#f4f0e7" opacity="0.36"/>
+  <path d="M128 384h256" stroke="#ffe2ac" stroke-width="22" stroke-linecap="round" opacity="0.92"/>
+  <path d="M152 426h208" stroke="#f4b267" stroke-width="14" stroke-linecap="round" opacity="0.5"/>
+</svg>

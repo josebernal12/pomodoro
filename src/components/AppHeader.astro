@@ -1,0 +1,18 @@
+---
+interface Props {
+  appName: string;
+}
+
+const { appName } = Astro.props;
+---
+
+<header class="topbar">
+  <div class="brand" aria-label={appName}>
+    <span class="brand-mark" aria-hidden="true"></span>
+    <span>{appName}</span>
+  </div>
+  <div class="today-pill" aria-live="polite">
+    <span>Hoy</span>
+    <strong class="today-count" data-today-count>0</strong>
+  </div>
+</header>

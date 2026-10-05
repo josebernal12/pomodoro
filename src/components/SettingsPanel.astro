@@ -1,0 +1,71 @@
+<aside class="settings-panel" hidden data-settings-panel aria-label="Ajustes">
+  <div class="settings-head">
+    <h2 class="settings-title">Ajustes</h2>
+    <button class="icon-button" type="button" aria-label="Cerrar ajustes" data-settings-close>
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+
+  <div class="field-grid">
+    <label class="field">
+      Duracion de ventana
+      <input min="1" max="90" type="number" inputmode="numeric" data-setting="focusMinutes" />
+    </label>
+    <label class="field">
+      Descanso corto
+      <input min="1" max="45" type="number" inputmode="numeric" data-setting="shortBreakMinutes" />
+    </label>
+    <label class="field">
+      Descanso largo
+      <input min="1" max="60" type="number" inputmode="numeric" data-setting="longBreakMinutes" />
+    </label>
+    <label class="field">
+      Alarma
+      <select data-setting="alarm">
+        <option value="bell">Campana suave</option>
+        <option value="gong">Gong bajo</option>
+        <option value="birds">Pajaritos</option>
+        <option value="none">Nada</option>
+      </select>
+    </label>
+    <label class="field">
+      Vista
+      <select data-setting="layoutMode">
+        <option value="full">Completa</option>
+        <option value="companion">Companion</option>
+        <option value="mini">Mini</option>
+      </select>
+    </label>
+    <label class="field">
+      Ambiente
+      <input min="0" max="100" type="range" data-setting="ambientVolume" />
+    </label>
+  </div>
+
+  <section class="streak" aria-labelledby="streak-title">
+    <div class="streak-title">
+      <span id="streak-title">Ventanas guardadas</span>
+      <span data-streak-count>0 dias</span>
+    </div>
+    <div class="streak-stats" aria-live="polite">
+      <div>
+        <strong data-streak-today>0</strong>
+        <span>hoy</span>
+      </div>
+      <div>
+        <strong data-streak-best>0</strong>
+        <span>mejor dia</span>
+      </div>
+      <div>
+        <strong data-streak-total>0</strong>
+        <span>total</span>
+      </div>
+    </div>
+    <p class="streak-note">Ultimos 14 dias</p>
+    <div class="streak-grid" data-streak-grid aria-label="Ultimos 14 dias"></div>
+  </section>
+
+  <div class="dev-tools" hidden data-dev-tools>
+    <button class="dev-button" type="button" data-action="complete-test">Probar ventana completada</button>
+  </div>
+</aside>

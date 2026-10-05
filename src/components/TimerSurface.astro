@@ -1,0 +1,35 @@
+<section class="focus-card" aria-labelledby="timer-heading">
+  <p class="mode-label" data-mode-label>Ventana abierta</p>
+  <h1 id="timer-heading" class="timer" data-timer>25:00</h1>
+  <p class="message" data-message>Abre la ventana. Entra en ritmo.</p>
+  <div class="active-note" hidden data-active-note>
+    <button class="active-note-main" type="button" data-active-note-open>
+      <span data-active-note-meta>Nota activa</span>
+      <strong data-active-note-title></strong>
+      <small data-active-note-body></small>
+    </button>
+    <button class="active-note-float" type="button" aria-label="Abrir nota flotante" data-note-float>
+      <span aria-hidden="true">&#8599;</span>
+    </button>
+    <div class="note-switcher" hidden data-note-switcher></div>
+  </div>
+  <div class="controls" aria-label="Controles del temporizador">
+    <button class="control-button primary" type="button" data-action="toggle">
+      <img class="control-icon" src="/icons/cats/play.png" alt="" aria-hidden="true" data-toggle-icon />
+      <span data-toggle-label>Play</span>
+    </button>
+    <button class="control-button" type="button" data-action="reset">
+      <img class="control-icon" src="/icons/cats/reset.png" alt="" aria-hidden="true" />
+      <span>Reiniciar</span>
+    </button>
+    <button class="control-button" type="button" data-action="skip">
+      <img class="control-icon control-icon-wide" src="/icons/cats/skip.png" alt="" aria-hidden="true" />
+      <span>Saltar</span>
+    </button>
+  </div>
+</section>
+
+<div class="completion-toast" data-completion-toast data-visible="false" aria-live="polite">
+  <span class="completion-kicker" data-completion-kicker>Ventana guardada</span>
+  <span class="completion-text" data-completion-text>25 minutos guardados.</span>
+</div>

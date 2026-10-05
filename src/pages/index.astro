@@ -1,17 +1,47 @@
+﻿---
+import AppHeader from "../components/AppHeader.astro";
+import ExtensionsPanel from "../components/ExtensionsPanel.astro";
+import FloatingActions from "../components/FloatingActions.astro";
+import NotebookPanel from "../components/NotebookPanel.astro";
+import OstPanel from "../components/OstPanel.astro";
+import Scene from "../components/Scene.astro";
+import SettingsPanel from "../components/SettingsPanel.astro";
+import TimerSurface from "../components/TimerSurface.astro";
+import WindowPanel from "../components/WindowPanel.astro";
+import "../styles/global.css";
+
+const appName = "Ventana Pomodoro";
+const enableServiceWorker = import.meta.env.PROD;
 ---
 
----
-
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro</title>
-	</head>
-	<body>
-		<h1>Astro</h1>
-	</body>
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Un Pomodoro inmersivo, veloz y sin login para abrir una ventana de enfoque."
+    />
+    <meta name="theme-color" content="#17130f" />
+    <link rel="preload" as="image" href="/scenes/cat-rain-window/background.webp" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+    <title>{appName}</title>
+  </head>
+  <body>
+    <main class="app-shell" data-mode="focus" data-enable-service-worker={enableServiceWorker ? "true" : "false"}>
+      <Scene />
+      <AppHeader appName={appName} />
+      <TimerSurface />
+      <FloatingActions />
+      <WindowPanel />
+      <ExtensionsPanel />
+      <NotebookPanel />
+      <OstPanel />
+      <SettingsPanel />
+    </main>
+    <script src="../scripts/pomodoro.js"></script>
+</body>
 </html>

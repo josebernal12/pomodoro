@@ -1,43 +1,29 @@
-# Astro Starter Kit: Minimal
+# Ventana Pomodoro
+
+Un temporizador Pomodoro tranquilo, instalable y sin cuenta. Incluye ambientes visuales, música local, tareas con seguimiento de sesiones y una ventana flotante.
+
+## Empezar
+
+Requiere Node.js 22.12 o posterior.
 
 ```sh
-npm create astro@latest -- --template minimal
+npm install
+npm run dev
 ```
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+Abre la dirección local que muestra Astro, normalmente `http://localhost:4321`.
 
-## 🚀 Project Structure
+## Personalizar
 
-Inside of your Astro project, you'll see the following folders and files:
+- **Fondos:** añade cada ambiente en `public/scenes/<id>/background.webp` y registra su identificador y nombre en `src/components/WindowPanel.astro` y `src/scripts/pomodoro.js`.
+- **Música:** abre **Banda sonora** en la app y añade archivos de audio desde tu dispositivo. Se guardan en el almacenamiento local del navegador.
+- **Tareas:** activa Cuaderno desde Extensiones. Las tareas se conservan entre días y cada bloque de enfoque completado suma al contador de la tarea activa.
 
-```text
-/
-├── public/
-├── src/
-│   └── pages/
-│       └── index.astro
-└── package.json
+## Compilar
+
+```sh
+npm run build
+npm run preview
 ```
 
-Astro looks for `.astro` or `.md` files in the `src/pages/` directory. Each page is exposed as a route based on its file name.
-
-There's nothing special about `src/components/`, but that's where we like to put any Astro/React/Vue/Svelte/Preact components.
-
-Any static assets, like images, can be placed in the `public/` directory.
-
-## 🧞 Commands
-
-All commands are run from the root of the project, from a terminal:
-
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
-
-## 👀 Want to learn more?
-
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+Los datos de tareas, ajustes y música permanecen en el navegador del usuario. La app no requiere inicio de sesión.

@@ -1,0 +1,35 @@
+<aside class="ost-panel" hidden data-ost-panel aria-label="Música para concentrarse">
+  <div class="panel-head">
+    <div>
+      <h2 class="panel-title">Banda sonora</h2>
+      <p class="ost-caption">Música suave para acompañar tu ventana.</p>
+    </div>
+    <button class="panel-close-button" type="button" aria-label="Cerrar banda sonora" data-ost-close>
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+
+  <div class="ost-now-playing" data-ost-now-playing>
+    <span class="ost-disc" aria-hidden="true">♪</span>
+    <span class="ost-track-copy">
+      <small data-ost-status>Elige una pista</small>
+      <strong data-ost-current>Ninguna seleccionada</strong>
+    </span>
+    <button class="ost-play-button" type="button" data-ost-play aria-label="Reproducir música">▶</button>
+  </div>
+
+  <label class="ost-volume-field">
+    <span>Volumen de música</span>
+    <input type="range" min="0" max="100" value="35" data-ost-volume aria-label="Volumen de música" />
+  </label>
+
+  <div class="ost-list-head"><span>Tus pistas</span><span data-ost-count>0</span></div>
+  <div class="ost-track-list" data-ost-track-list aria-live="polite"></div>
+  <label class="ost-add-button">
+    <input type="file" accept="audio/*,.mp3,.ogg,.wav,.m4a,.flac" multiple data-ost-upload />
+    <span aria-hidden="true">＋</span> Añadir música desde tu dispositivo
+  </label>
+  <p class="ost-footnote">Tus pistas se guardan en este navegador.</p>
+</aside>
+
+<audio data-ost-audio preload="none" loop></audio>
