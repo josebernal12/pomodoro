@@ -57,6 +57,8 @@
         ringHead: document.querySelector("[data-ring-head]"),
         noteFloat: document.querySelector("[data-note-float]"),
         noteSwitcher: document.querySelector("[data-note-switcher]"),
+        noteSwitcherList: document.querySelector("[data-note-switcher-list]"),
+        noteClear: document.querySelector("[data-note-clear]"),
         activeNoteTitle: document.querySelector("[data-active-note-title]"),
         toggle: document.querySelector('[data-action="toggle"]'),
         toggleLabel: document.querySelector("[data-toggle-label]"),
@@ -344,6 +346,16 @@
 
       function renderActiveNoteChip(activeNote) {
         const pending = state.notebook.notes.filter((note) => !note.completed).length;
+        elements.activeNote.dataset.state = activeNote ? "active" : "done";
+        elements.noteFloat.hidden = !activeNote;
+        if (!activeNote) {
+          elements.activeNoteTitle.textContent = "Todo listo por ahora";
+          elements.activeNoteOpen.title = "";
+          elements.activeNoteOpen.setAttribute("aria-label", "Todo listo. Ver tareas");
+          elements.activeNoteMore.hidden = true;
+          elements.activeNoteDots.replaceChildren();
+          return;
+        }
         elements.activeNoteTitle.textContent = activeNote.title;
         elements.activeNoteOpen.title = activeNote.body || "";
         elements.activeNoteOpen.setAttribute(
@@ -379,11 +391,12 @@
         elements.notebookToggle.hidden = !state.extensions.notebook;
         elements.shell.dataset.notebook = state.extensions.notebook ? "enabled" : "disabled";
         const activeNote = getActiveNote();
-        const shouldShowActiveNote = Boolean(state.extensions.notebook && activeNote);
+        const shouldShowActiveNote = Boolean(state.extensions.notebook && state.notebook.notes.length);
         const activeNoteWasHidden = elements.activeNote.hidden;
         elements.activeNote.hidden = !shouldShowActiveNote;
-        if (activeNote) renderActiveNoteChip(activeNote);
-        if (shouldShowActiveNote && (activeNoteWasHidden || lastActiveNoteId !== activeNote.id)) {
+        if (shouldShowActiveNote) renderActiveNoteChip(activeNote);
+        if (!shouldShowActiveNote) hideNoteSwitcher();
+        if (shouldShowActiveNote && (activeNoteWasHidden || lastActiveNoteId !== (activeNote?.id || ""))) {
           animateActiveNote();
         }
         lastActiveNoteId = activeNote?.id || "";
@@ -423,47 +436,100 @@
         return state.notebook.notes.find((note) => note.id === state.notebook.activeNoteId && !note.completed) || null;
       }
 
-      function renderNoteSwitcher() {
-        const pendingNotes = state.notebook.notes.filter((note) => !note.completed);
-        const shouldShowList = state.extensions.notebook && pendingNotes.length > 1;
-        const wasHidden = elements.noteSwitcher.hidden;
-        elements.noteSwitcher.innerHTML = "";
-        if (!shouldShowList) {
-          elements.noteSwitcher.hidden = true;
-          return;
-        }
+      let noteSwitcherSignature = "";
 
-        pendingNotes.forEach((note) => {
+      function renderNoteSwitcher() {
+        const { notes, activeNoteId } = state.notebook;
+        const doneNotes = notes.filter((note) => note.completed);
+        const pendingNotes = notes.filter((note) => !note.completed);
+        // render() corre cada segundo: solo se reconstruye la lista cuando cambia algo,
+        // para no perder el hover ni los clics a medias.
+        const signature = JSON.stringify(notes.map((note) => [note.id, note.title, note.completed, note.pomodoros])) + activeNoteId;
+        if (signature === noteSwitcherSignature) return;
+        noteSwitcherSignature = signature;
+
+        const before = new Map();
+        elements.noteSwitcherList.querySelectorAll("[data-note-id]").forEach((row) => {
+          before.set(row.dataset.noteId, row.getBoundingClientRect().top);
+        });
+
+        elements.noteSwitcherList.replaceChildren();
+        const addRow = (note) => {
           const row = document.createElement("div");
           row.className = "note-switcher-row";
           row.dataset.noteId = note.id;
-          row.dataset.active = note.id === state.notebook.activeNoteId ? "true" : "false";
+          row.dataset.active = note.id === activeNoteId && !note.completed ? "true" : "false";
+          row.dataset.done = note.completed ? "true" : "false";
 
-          const chooseButton = document.createElement("button");
-          chooseButton.type = "button";
-          chooseButton.dataset.noteSwitchAction = "activate";
-          chooseButton.className = "note-switcher-main";
+          const check = document.createElement("button");
+          check.type = "button";
+          check.className = "note-switcher-check";
+          check.dataset.noteSwitchAction = "toggle";
+          check.setAttribute("aria-pressed", note.completed.toString());
+          check.setAttribute("aria-label", note.completed ? `Reabrir ${note.title}` : `Terminar ${note.title}`);
+          check.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>';
 
+          const choose = document.createElement("button");
+          choose.type = "button";
+          choose.className = "note-switcher-main";
+          choose.dataset.noteSwitchAction = note.completed ? "toggle" : "activate";
           const title = document.createElement("strong");
           title.textContent = note.title;
+          choose.append(title);
+          if (note.pomodoros) {
+            const count = document.createElement("small");
+            count.textContent = `${note.pomodoros} ${note.pomodoros === 1 ? "bloque" : "bloques"}`;
+            choose.append(count);
+          }
 
-          const body = document.createElement("small");
-          body.textContent = note.body || "Sin detalle.";
+          row.append(check, choose);
+          if (!note.completed) {
+            const floatButton = document.createElement("button");
+            floatButton.type = "button";
+            floatButton.dataset.noteSwitchAction = "float";
+            floatButton.className = "note-switcher-float";
+            floatButton.setAttribute("aria-label", `Abrir ${note.title} como nota flotante`);
+            floatButton.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M7 17 17 7M8 7h9v9" /></svg>';
+            row.append(floatButton);
+          }
+          elements.noteSwitcherList.append(row);
+        };
 
-          chooseButton.append(title, body);
+        // Las hechas se quedan arriba, apagadas, hasta que las limpies.
+        doneNotes.forEach(addRow);
+        if (doneNotes.length && pendingNotes.length) {
+          const divider = document.createElement("div");
+          divider.className = "note-switcher-divider";
+          elements.noteSwitcherList.append(divider);
+        }
+        pendingNotes.forEach(addRow);
 
-          const floatButton = document.createElement("button");
-          floatButton.type = "button";
-          floatButton.dataset.noteSwitchAction = "float";
-          floatButton.className = "note-switcher-float";
-          floatButton.setAttribute("aria-label", `Abrir ${note.title} como nota flotante`);
-          floatButton.innerHTML = "<span aria-hidden=\"true\">&#8599;</span>";
+        elements.noteClear.hidden = !doneNotes.length;
+        elements.noteClear.textContent = `Limpiar hechas · ${doneNotes.length}`;
 
-          row.append(chooseButton, floatButton);
-          elements.noteSwitcher.append(row);
-        });
+        // FLIP: las filas se deslizan a su nuevo lugar en vez de saltar.
+        if (canAnimate() && before.size) {
+          elements.noteSwitcherList.querySelectorAll("[data-note-id]").forEach((row) => {
+            const previousTop = before.get(row.dataset.noteId);
+            if (previousTop === undefined) return;
+            const delta = previousTop - row.getBoundingClientRect().top;
+            if (Math.abs(delta) < 1) return;
+            gsap.fromTo(row, { y: delta }, { y: 0, duration: 0.38, ease: "power3.out", clearProps: "transform" });
+          });
+        }
+      }
 
-        elements.noteSwitcher.hidden = wasHidden;
+      function toggleTaskCompleted(noteId) {
+        const task = state.notebook.notes.find((note) => note.id === noteId);
+        if (!task) return;
+        task.completed = !task.completed;
+        if (task.completed && state.notebook.activeNoteId === noteId) {
+          state.notebook.activeNoteId = state.notebook.notes.find((note) => !note.completed)?.id || "";
+        } else if (!task.completed && !state.notebook.activeNoteId) {
+          state.notebook.activeNoteId = noteId;
+        }
+        saveState();
+        render();
       }
 
       function renderNotes() {
@@ -640,16 +706,11 @@
 
       function animateActiveNote() {
         if (!canAnimate() || elements.activeNote.hidden) return;
-        gsap.killTweensOf(elements.activeNote);
+        gsap.killTweensOf(elements.activeNoteOpen);
         gsap.fromTo(
-          elements.activeNote,
-          { opacity: 0 },
-          {
-            opacity: 1,
-            duration: 0.14,
-            ease: "power2.out",
-            clearProps: "opacity",
-          },
+          elements.activeNoteOpen,
+          { opacity: 0, y: 6 },
+          { opacity: 1, y: 0, duration: 0.32, ease: "power2.out", clearProps: "opacity,transform" },
         );
       }
 
@@ -669,25 +730,26 @@
         );
       }
 
+      function setNoteSwitcherOpen(open) {
+        elements.noteSwitcher.dataset.open = open ? "true" : "false";
+        elements.activeNote.dataset.open = open ? "true" : "false";
+        elements.activeNoteOpen.setAttribute("aria-expanded", open ? "true" : "false");
+      }
+
       function showNoteSwitcher() {
-        gsap.killTweensOf(elements.noteSwitcher);
-        gsap.set(elements.noteSwitcher, { clearProps: "opacity,transform" });
-        elements.noteSwitcher.hidden = false;
+        setNoteSwitcherOpen(true);
       }
 
       function hideNoteSwitcher() {
-        if (elements.noteSwitcher.hidden) return;
-        gsap.killTweensOf(elements.noteSwitcher);
-        gsap.set(elements.noteSwitcher, { clearProps: "opacity,transform" });
-        elements.noteSwitcher.hidden = true;
+        if (elements.noteSwitcher.dataset.open !== "true") return;
+        setNoteSwitcherOpen(false);
       }
 
       function toggleNoteSwitcher() {
-        if (state.notebook.notes.filter((note) => !note.completed).length <= 1) return;
-        if (elements.noteSwitcher.hidden) {
-          showNoteSwitcher();
-        } else {
+        if (elements.noteSwitcher.dataset.open === "true") {
           hideNoteSwitcher();
+        } else {
+          showNoteSwitcher();
         }
       }
 
@@ -1497,12 +1559,7 @@
 
       elements.activeNoteOpen.addEventListener("click", () => {
         if (!state.extensions.notebook) return;
-        if (state.notebook.notes.filter((note) => !note.completed).length > 1) {
-          toggleNoteSwitcher();
-          return;
-        }
-        closePanels("notebook");
-        showPanel(elements.notebookPanel);
+        toggleNoteSwitcher();
       });
 
       elements.noteFloat.addEventListener("click", (event) => {
@@ -1569,14 +1626,7 @@
         const task = state.notebook.notes.find((note) => note.id === noteId);
         if (!task) return;
         if (button.dataset.noteAction === "complete") {
-          task.completed = !task.completed;
-          if (task.completed && state.notebook.activeNoteId === noteId) {
-            state.notebook.activeNoteId = state.notebook.notes.find((note) => !note.completed)?.id || "";
-          } else if (!task.completed && !state.notebook.activeNoteId) {
-            state.notebook.activeNoteId = noteId;
-          }
-          saveState();
-          render();
+          toggleTaskCompleted(noteId);
           return;
         }
         if (button.dataset.noteAction === "reopen") {
@@ -1613,19 +1663,38 @@
 
       elements.noteSwitcher.addEventListener("click", (event) => {
         const button = event.target.closest("[data-note-switch-action]");
+        if (!button) return;
+        const action = button.dataset.noteSwitchAction;
+        if (action === "new") {
+          hideNoteSwitcher();
+          closePanels("notebook");
+          showPanel(elements.notebookPanel);
+          elements.notebookPanel.querySelector("[data-notebook-draft='title']")?.focus();
+          return;
+        }
+        if (action === "clear") {
+          state.notebook.notes = state.notebook.notes.filter((note) => !note.completed);
+          saveState();
+          render();
+          return;
+        }
         const row = event.target.closest("[data-note-id]");
-        if (!button || !row) return;
+        if (!row) return;
         const noteId = row.dataset.noteId;
+        if (action === "toggle") {
+          toggleTaskCompleted(noteId);
+          return;
+        }
         state.notebook.activeNoteId = noteId;
         saveState();
         render();
         animateNoteCard(noteId);
-        if (button.dataset.noteSwitchAction === "float") {
-          hideNoteSwitcher();
-          openFloatingTimer("note");
-          return;
-        }
         hideNoteSwitcher();
+        if (action === "float") openFloatingTimer("note");
+      });
+
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") hideNoteSwitcher();
       });
 
       document.addEventListener("pointerdown", (event) => {

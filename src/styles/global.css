@@ -420,6 +420,7 @@
       }
 
       .active-note {
+        position: relative;
         display: grid;
         grid-template-columns: minmax(0, 1fr) auto;
         align-items: center;
@@ -433,11 +434,6 @@
         color: var(--room-ink);
         text-align: left;
         backdrop-filter: blur(16px);
-        transition: border-radius 200ms ease;
-      }
-
-      .active-note:has(.note-switcher:not([hidden])) {
-        border-radius: 22px;
       }
 
       .active-note[hidden] {
@@ -500,6 +496,31 @@
         background: var(--ember);
       }
 
+      .active-note-chevron {
+        flex: 0 0 auto;
+        width: 16px;
+        height: 16px;
+        fill: none;
+        stroke: var(--quiet-ink);
+        stroke-width: 1.8;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        transition: transform 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+      }
+
+      .active-note[data-open="true"] .active-note-chevron {
+        transform: rotate(180deg);
+      }
+
+      .active-note[data-state="done"] .active-note-dot {
+        background: var(--mist);
+        box-shadow: 0 0 14px rgba(194, 225, 206, 0.6);
+      }
+
+      .active-note-float[hidden] {
+        display: none;
+      }
+
       .active-note-float {
         display: grid;
         width: 40px;
@@ -523,75 +544,224 @@
         color: var(--room-ink);
       }
 
+      /* La lista flota fuera del flujo: abrirla no mueve el reloj. Hacia arriba por defecto;
+         al costado del chip cuando hay ancho de sobra. */
       .note-switcher {
-        grid-column: 1 / -1;
-        display: grid;
-        gap: 7px;
-        max-height: min(238px, 36vh);
-        overflow: auto;
-        padding-top: 2px;
+        position: absolute;
+        right: 0;
+        bottom: calc(100% + 10px);
+        left: 0;
+        z-index: 3;
+        padding: 8px;
+        border: 1px solid rgba(255, 247, 232, 0.2);
+        border-radius: 22px;
+        background: rgba(17, 14, 11, 0.92);
+        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.4);
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        transform: translateY(8px) scale(0.98);
+        transform-origin: bottom center;
+        transition:
+          opacity 200ms ease,
+          transform 260ms cubic-bezier(0.2, 0.8, 0.2, 1),
+          visibility 0s linear 260ms;
       }
 
-      .note-switcher[hidden] {
-        display: none;
+      .note-switcher[data-open="true"] {
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+        transform: none;
+        transition-delay: 0s;
+      }
+
+      @media (min-width: 1280px) {
+        .note-switcher {
+          right: auto;
+          bottom: 0;
+          left: calc(100% + 16px);
+          width: 340px;
+          transform: translateX(-10px) scale(0.98);
+          transform-origin: left bottom;
+        }
+
+        .note-switcher[data-open="true"] {
+          transform: none;
+        }
+      }
+
+      .note-switcher-list {
+        display: grid;
+        gap: 2px;
+        max-height: min(300px, 44vh);
+        overflow: auto;
+        overscroll-behavior: contain;
       }
 
       .note-switcher-row {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) 34px;
-        gap: 7px;
-        border: 1px solid rgba(255, 247, 232, 0.1);
-        border-radius: 7px;
-        background: rgba(0, 0, 0, 0.16);
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        min-height: 46px;
+        padding: 0 4px 0 6px;
+        border-radius: 14px;
+        transition: background 160ms ease;
+      }
+
+      .note-switcher-row:hover {
+        background: rgba(255, 247, 232, 0.07);
       }
 
       .note-switcher-row[data-active="true"] {
-        border-color: rgba(255, 226, 172, 0.34);
-        background: rgba(255, 226, 172, 0.09);
+        background: rgba(244, 178, 103, 0.1);
+      }
+
+      .note-switcher-check {
+        display: grid;
+        flex: 0 0 auto;
+        width: 28px;
+        height: 28px;
+        place-items: center;
+        border: 2px solid rgba(255, 247, 232, 0.4);
+        border-radius: 50%;
+        background: transparent;
+        color: transparent;
+        transition:
+          background 200ms ease,
+          border-color 200ms ease,
+          color 200ms ease,
+          transform 200ms ease;
+      }
+
+      .note-switcher-check svg {
+        width: 16px;
+        height: 16px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 2.6;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .note-switcher-row[data-active="true"] .note-switcher-check {
+        border-color: var(--ember);
+      }
+
+      .note-switcher-check:hover {
+        border-color: var(--ember);
+        background: rgba(244, 178, 103, 0.2);
+        color: var(--ember);
+      }
+
+      .note-switcher-row[data-done="true"] .note-switcher-check {
+        border-color: var(--ember);
+        background: var(--ember);
+        color: #2a1a08;
       }
 
       .note-switcher-main {
-        display: grid;
+        display: flex;
         min-width: 0;
-        min-height: 50px;
-        gap: 2px;
-        padding: 8px 9px;
+        flex: 1;
+        align-items: baseline;
+        gap: 10px;
+        padding: 10px 6px;
         background: transparent;
         text-align: left;
       }
 
-      .note-switcher-main strong,
-      .note-switcher-main small {
+      .note-switcher-main strong {
+        min-width: 0;
         overflow: hidden;
+        color: var(--room-ink);
+        font-size: 0.92rem;
+        font-weight: 500;
         text-overflow: ellipsis;
         white-space: nowrap;
-      }
-
-      .note-switcher-main strong {
-        color: rgba(255, 247, 232, 0.9);
-        font-size: 0.84rem;
-        font-weight: 650;
+        transition: color 200ms ease;
       }
 
       .note-switcher-main small {
-        color: rgba(255, 247, 232, 0.54);
-        font-size: 0.7rem;
+        flex: 0 0 auto;
+        color: rgba(255, 247, 232, 0.5);
+        font-size: 0.72rem;
+      }
+
+      .note-switcher-row[data-done="true"] .note-switcher-main strong {
+        color: rgba(255, 247, 232, 0.45);
+        text-decoration: line-through;
+        text-decoration-color: rgba(244, 178, 103, 0.7);
       }
 
       .note-switcher-float {
         display: grid;
-        width: 34px;
-        min-height: 50px;
+        flex: 0 0 auto;
+        width: 32px;
+        height: 32px;
         place-items: center;
-        border-left: 1px solid rgba(255, 247, 232, 0.09);
-        border-radius: 0 7px 7px 0;
-        background: rgba(255, 226, 172, 0.07);
-        color: rgba(255, 247, 232, 0.78);
+        border-radius: 50%;
+        background: transparent;
+        color: var(--quiet-ink);
+        opacity: 0;
+        transition:
+          background 160ms ease,
+          opacity 160ms ease;
       }
 
-      .note-switcher-main:hover,
+      .note-switcher-float svg {
+        width: 16px;
+        height: 16px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.6;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .note-switcher-row:hover .note-switcher-float,
+      .note-switcher-float:focus-visible {
+        opacity: 1;
+      }
+
       .note-switcher-float:hover {
-        background: rgba(255, 247, 232, 0.08);
+        background: rgba(255, 247, 232, 0.12);
+        color: var(--room-ink);
+      }
+
+      .note-switcher-divider {
+        height: 1px;
+        margin: 4px 10px;
+        background: rgba(255, 247, 232, 0.12);
+      }
+
+      .note-switcher-foot {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-top: 6px;
+        padding: 8px 10px 2px;
+        border-top: 1px solid rgba(255, 247, 232, 0.1);
+      }
+
+      .note-switcher-link {
+        padding: 2px 0;
+        background: transparent;
+        color: var(--ember);
+        font-size: 0.82rem;
+      }
+
+      .note-switcher-link[hidden] {
+        display: none;
+      }
+
+      .note-switcher-link.muted {
+        color: var(--quiet-ink);
+      }
+
+      .note-switcher-link:hover {
+        color: var(--lamplight);
       }
 
       .controls {
@@ -709,6 +879,8 @@
       .active-note-main:focus-visible,
       .active-note-float:focus-visible,
       .note-switcher-main:focus-visible,
+      .note-switcher-check:focus-visible,
+      .note-switcher-link:focus-visible,
       .note-switcher-float:focus-visible,
       .extension-card:focus-within,
       .window-card:focus-visible,
