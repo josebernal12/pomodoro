@@ -388,6 +388,156 @@
         transform: scale(1.025);
       }
 
+      .round-end {
+        position: fixed;
+        inset: 0;
+        z-index: 9;
+        display: grid;
+        padding: 24px;
+        place-items: center;
+        background: rgba(14, 11, 8, 0.62);
+        opacity: 0;
+        visibility: hidden;
+        backdrop-filter: blur(4px);
+        transition:
+          opacity 320ms ease,
+          visibility 0s linear 320ms;
+      }
+
+      .round-end[data-open="true"] {
+        opacity: 1;
+        visibility: visible;
+        transition-delay: 0s;
+      }
+
+      .round-end-card {
+        --accent: var(--ember);
+        display: grid;
+        justify-items: center;
+        gap: 10px;
+        width: min(440px, 100%);
+        padding: 34px 32px 28px;
+        border: 1px solid color-mix(in srgb, var(--accent) 50%, transparent);
+        border-radius: 28px;
+        background: rgba(17, 14, 11, 0.92);
+        box-shadow: 0 30px 90px rgba(0, 0, 0, 0.5);
+        text-align: center;
+        transform: translateY(14px) scale(0.97);
+        transition: transform 380ms cubic-bezier(0.2, 0.8, 0.2, 1);
+      }
+
+      .round-end[data-kind="break"] .round-end-card {
+        --accent: var(--mist);
+      }
+
+      .round-end[data-open="true"] .round-end-card {
+        transform: none;
+      }
+
+      .round-end-icon {
+        position: relative;
+        display: grid;
+        width: 60px;
+        height: 60px;
+        margin-bottom: 14px;
+        place-items: center;
+        border-radius: 50%;
+        background: var(--accent);
+        color: #2a1a08;
+      }
+
+      .round-end-icon::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border: 1.5px solid var(--accent);
+        border-radius: 50%;
+        opacity: 0;
+      }
+
+      .round-end[data-open="true"] .round-end-icon::after {
+        animation: live-ring-soft 2.4s ease-out infinite;
+      }
+
+      .round-end-icon svg {
+        width: 30px;
+        height: 30px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 2.4;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .round-end[data-kind="focus"] .icon-break,
+      .round-end[data-kind="break"] .icon-focus {
+        display: none;
+      }
+
+      .round-end-kicker {
+        margin: 0;
+        color: var(--accent);
+        font-size: 0.8rem;
+        font-weight: 500;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+      }
+
+      .round-end-title {
+        margin: 0;
+        font-family: var(--font-display);
+        font-size: 2rem;
+        font-weight: 400;
+        line-height: 1.15;
+      }
+
+      .round-end-sub {
+        margin: 0 0 12px;
+        color: var(--quiet-ink);
+        font-size: 0.95rem;
+      }
+
+      .round-end-actions {
+        display: grid;
+        gap: 10px;
+        width: 100%;
+      }
+
+      .round-end-primary,
+      .round-end-secondary {
+        min-height: 52px;
+        border-radius: 26px;
+        font-size: 1rem;
+        transition:
+          background 180ms ease,
+          transform 180ms ease;
+      }
+
+      .round-end-primary {
+        background: var(--ember);
+        color: #2a1a08;
+        font-weight: 600;
+      }
+
+      .round-end-primary:hover {
+        background: #f8c283;
+        transform: translateY(-1px);
+      }
+
+      .round-end-secondary {
+        border: 1px solid rgba(255, 247, 232, 0.35);
+        background: transparent;
+        color: var(--room-ink);
+      }
+
+      .round-end-secondary:hover {
+        background: rgba(255, 247, 232, 0.08);
+      }
+
+      .round-end-secondary[hidden] {
+        display: none;
+      }
+
       .completion-toast {
         position: fixed;
         left: 50%;
@@ -1070,6 +1220,8 @@
       .note-switcher-link:focus-visible,
       .note-switcher-float:focus-visible,
       .extension-card:focus-within,
+      .round-end-primary:focus-visible,
+      .round-end-secondary:focus-visible,
       .scene-thumb:focus-visible,
       .scene-strip-next:focus-visible,
       .window-close-button:focus-visible,
@@ -2064,6 +2216,12 @@
         cursor: pointer;
       }
 
+      .field .switch input {
+        width: 100%;
+        min-height: 0;
+        padding: 0;
+      }
+
       .field select option {
         background: #1b1612;
         color: var(--room-ink);
@@ -2227,6 +2385,19 @@
         100% {
           opacity: 0;
           transform: scale(2.8);
+        }
+      }
+
+      @keyframes live-ring-soft {
+        0% {
+          opacity: 0.6;
+          transform: scale(1);
+        }
+
+        70%,
+        100% {
+          opacity: 0;
+          transform: scale(1.7);
         }
       }
 

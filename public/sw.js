@@ -48,3 +48,14 @@ self.addEventListener("fetch", (event) => {
     })
   );
 });
+
+// Al tocar el aviso de fin de ronda, vuelve a la app si ya estaba abierta o la abre.
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
+      const open = clients.find((client) => "focus" in client);
+      return open ? open.focus() : self.clients.openWindow("/");
+    })
+  );
+});

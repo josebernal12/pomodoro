@@ -19,6 +19,10 @@ Abre la dirección local que muestra Astro, normalmente `http://localhost:4321`.
 - **Música:** abre **Banda sonora** en la app y añade archivos de audio desde tu dispositivo. Se guardan en el almacenamiento local del navegador.
 - **Tareas:** activa Cuaderno desde Extensiones. Las tareas se conservan entre días y cada bloque de enfoque completado suma al contador de la tarea activa.
 
+## Fin de ronda
+
+Al terminar el foco o el descanso, el reloj se detiene y aparece una tarjeta que espera tu respuesta. Para que no se pase de largo suena un acorde (se repite suave hasta 3 veces), el título de la pestaña parpadea y llega una notificación del sistema si aceptaste el permiso. En Ajustes puedes activar **Iniciar rondas solas** o apagar la notificación; la alarma se elige o se apaga en **Alarma**.
+
 ## Compilar
 
 ```sh

@@ -26,6 +26,8 @@
         alarm: "bell",
         ambientVolume: 45,
         ambientOn: true,
+        autoStart: false,
+        notifySystem: true,
         ostVolume: 35,
         ostTrackId: "",
         completedToday: 0,
@@ -51,6 +53,12 @@
         message: document.querySelector("[data-message]"),
         todayCount: document.querySelector("[data-today-count]"),
         todayDots: document.querySelector("[data-today-dots]"),
+        roundEnd: document.querySelector("[data-round-end]"),
+        roundEndKicker: document.querySelector("[data-round-end-kicker]"),
+        roundEndTitle: document.querySelector("[data-round-end-title]"),
+        roundEndSub: document.querySelector("[data-round-end-sub]"),
+        roundEndPrimary: document.querySelector("[data-round-end-primary]"),
+        roundEndSecondary: document.querySelector("[data-round-end-secondary]"),
         rail: document.querySelector("[data-rail]"),
         railToggle: document.querySelector("[data-rail-toggle]"),
         ambientToggle: document.querySelector("[data-ambient-toggle]"),
@@ -175,6 +183,8 @@
           }
           merged.ostVolume = clampNumber(merged.ostVolume, 0, 100, defaults.ostVolume);
           merged.ambientOn = merged.ambientOn !== false;
+          merged.autoStart = merged.autoStart === true;
+          merged.notifySystem = merged.notifySystem !== false;
           if (typeof merged.ostTrackId !== "string") merged.ostTrackId = "";
           merged.extensions = { ...defaults.extensions, ...(merged.extensions || {}) };
           merged.notebook = normalizeNotebook(merged.notebook);
@@ -416,6 +426,9 @@
         updateAmbientVolume();
         renderAmbientToggle();
         elements.timer.textContent = formatTime(secondsLeft);
+        if (!titleBlinkId) {
+          document.title = running ? `${formatTime(secondsLeft)} · ${mode === "focus" ? "Ventana" : "Descanso"}` : baseTitle;
+        }
         renderRing();
         renderTodayDots();
         elements.modeLabel.textContent = mode === "focus" ? "Ventana abierta" : "Descanso";
@@ -450,7 +463,10 @@
 
         elements.settings.forEach((input) => {
           const key = input.dataset.setting;
-          if (key && document.activeElement !== input) {
+          if (!key) return;
+          if (input.type === "checkbox") {
+            input.checked = Boolean(state[key]);
+          } else if (document.activeElement !== input) {
             input.value = state[key];
           }
         });
@@ -905,18 +921,44 @@
         }
       }
 
+      // El reloj se calcula con la hora de fin y no con "restar 1 por vuelta": si el navegador
+      // frena los temporizadores de una pestaña oculta, el tiempo sigue siendo el correcto.
+      let endsAt = 0;
+      let endTimeoutId = null;
+      let titleBlinkId = null;
+      let alarmRepeatId = null;
+      let awaitingRound = "";
+      const baseTitle = document.title;
+
+      function remainingSeconds() {
+        return Math.max(0, Math.ceil((endsAt - Date.now()) / 1000));
+      }
+
+      function stopClock() {
+        running = false;
+        endsAt = 0;
+        window.clearTimeout(endTimeoutId);
+      }
+
       function startTimer() {
         running = true;
+        endsAt = Date.now() + secondsLeft * 1000;
+        window.clearTimeout(endTimeoutId);
+        // Un único aviso programado al segundo exacto: no depende del ritmo del intervalo de abajo.
+        endTimeoutId = window.setTimeout(tick, secondsLeft * 1000 + 30);
         statusMessage = mode === "focus" ? focusMessages.running : breakMessages.running;
         startAmbient();
+        requestNotifyPermission();
+        prepareAudio();
         if (!intervalId) {
-          intervalId = window.setInterval(tick, 1000);
+          intervalId = window.setInterval(tick, 500);
         }
         render();
       }
 
       function pauseTimer() {
-        running = false;
+        if (running) secondsLeft = remainingSeconds() || secondsLeft;
+        stopClock();
         statusMessage = mode === "focus" ? focusMessages.paused : breakMessages.paused;
         stopAmbient();
         render();
@@ -924,15 +966,35 @@
 
       function tick() {
         if (!running) return;
-        secondsLeft -= 1;
-        if (secondsLeft <= 0) {
+        const remaining = remainingSeconds();
+        if (remaining <= 0) {
+          secondsLeft = 0;
           finishRound();
+          render();
+          return;
         }
-        render();
+        if (remaining !== secondsLeft) {
+          secondsLeft = remaining;
+          render();
+        }
+      }
+
+      document.addEventListener("visibilitychange", () => {
+        if (!document.hidden) {
+          tick();
+          stopTitleBlink();
+        }
+      });
+      window.addEventListener("focus", () => stopTitleBlink());
+
+      function breakMinutesNext() {
+        return cycleFocusCount % 4 === 0 ? state.longBreakMinutes : state.shortBreakMinutes;
       }
 
       function finishRound() {
-        playAlarm();
+        const endedMode = mode;
+        stopClock();
+        stopAmbient();
         if (mode === "focus") {
           cycleFocusCount += 1;
           state.completedToday += 1;
@@ -941,20 +1003,170 @@
           const key = todayKey();
           state.streakDays[key] = (state.streakDays[key] || 0) + 1;
           mode = "break";
-          startRound((cycleFocusCount % 4 === 0 ? state.longBreakMinutes : state.shortBreakMinutes) * 60);
-          statusMessage = `${quotes[(state.completedToday - 1) % quotes.length]} Respira. Estirate. Toma agua.`;
-          showCompletionMoment();
+          startRound(breakMinutesNext() * 60);
+          statusMessage = breakMessages.idle;
         } else {
           mode = "focus";
           startRound(state.focusMinutes * 60);
-          statusMessage = focusMessages.running;
+          statusMessage = focusMessages.idle;
         }
         pulseRoundChange();
         saveState();
+        announceRoundEnd(endedMode);
+        if (state.autoStart) {
+          showRoundToast(endedMode);
+          startTimer();
+        } else {
+          showRoundEnd(endedMode);
+        }
+      }
+
+      // ---- Avisos de fin de ronda: sonido, pestaña, sistema y vibración.
+      function roundEndCopy(endedMode) {
+        const task = getActiveNote();
+        if (endedMode === "focus") {
+          const done = state.completedToday;
+          return {
+            kicker: "Ventana completada",
+            title: task ? `¿Terminaste «${task.title}»?` : quotes[(done - 1) % quotes.length],
+            sub: `${done === 1 ? "Primera ventana" : `Ventana ${done}`} de hoy · descanso de ${breakMinutesNext()} min`,
+            body: `Hora de descansar ${breakMinutesNext()} min.`,
+          };
+        }
+        return {
+          kicker: "Descanso terminado",
+          title: task ? `Siguiente: «${task.title}»` : "Listo para otra ventana",
+          sub: `Ventana de ${state.focusMinutes} min`,
+          body: "Hora de volver a enfocar.",
+        };
+      }
+
+      function announceRoundEnd(endedMode) {
+        playChime(1);
+        navigator.vibrate?.([200, 100, 200]);
+        const away = document.hidden || !document.hasFocus();
+        const copy = roundEndCopy(endedMode);
+        if (away) {
+          sendSystemNotification(copy.kicker, copy.body);
+          startTitleBlink(`● ${endedMode === "focus" ? "Ventana lista" : "Descanso listo"}`);
+        }
+        if (!state.autoStart) scheduleAlarmRepeat(1);
+      }
+
+      function scheduleAlarmRepeat(count) {
+        window.clearTimeout(alarmRepeatId);
+        if (count > 3) return;
+        alarmRepeatId = window.setTimeout(() => {
+          if (!awaitingRound) return;
+          playChime(0.55);
+          scheduleAlarmRepeat(count + 1);
+        }, 30000);
+      }
+
+      function startTitleBlink(text) {
+        stopTitleBlink();
+        let on = true;
+        document.title = text;
+        titleBlinkId = window.setInterval(() => {
+          on = !on;
+          document.title = on ? text : baseTitle;
+        }, 1000);
+      }
+
+      function stopTitleBlink() {
+        if (!titleBlinkId) return;
+        window.clearInterval(titleBlinkId);
+        titleBlinkId = null;
+        document.title = baseTitle;
+        render();
+      }
+
+      function requestNotifyPermission() {
+        if (!state.notifySystem || !("Notification" in window) || Notification.permission !== "default") return;
+        try {
+          Notification.requestPermission();
+        } catch {}
+      }
+
+      async function sendSystemNotification(title, body) {
+        if (!state.notifySystem || !("Notification" in window) || Notification.permission !== "granted") return;
+        const options = { body, tag: "round-end", icon: "/icons/icon-192.png", renotify: true };
+        try {
+          const registration = await navigator.serviceWorker?.getRegistration();
+          if (registration) {
+            await registration.showNotification(title, options);
+            return;
+          }
+          const notification = new Notification(title, options);
+          notification.onclick = () => {
+            window.focus();
+            notification.close();
+          };
+        } catch {}
+      }
+
+      function showRoundEnd(endedMode) {
+        const copy = roundEndCopy(endedMode);
+        const task = getActiveNote();
+        awaitingRound = endedMode;
+        elements.roundEnd.dataset.kind = endedMode;
+        elements.roundEndKicker.textContent = copy.kicker;
+        elements.roundEndTitle.textContent = copy.title;
+        elements.roundEndSub.textContent = copy.sub;
+        if (endedMode === "focus") {
+          elements.roundEndPrimary.textContent = task ? "Hecha, empezar descanso" : "Empezar descanso";
+          elements.roundEndSecondary.hidden = !task;
+          elements.roundEndSecondary.textContent = "Seguir con ella, descansar";
+          elements.roundEndPrimary.dataset.complete = task ? "true" : "false";
+        } else {
+          elements.roundEndPrimary.textContent = "Empezar ventana";
+          elements.roundEndPrimary.dataset.complete = "false";
+          elements.roundEndSecondary.hidden = true;
+        }
+        elements.roundEnd.inert = false;
+        elements.roundEnd.dataset.open = "true";
+        window.setTimeout(() => elements.roundEndPrimary.focus({ preventScroll: true }), 60);
+      }
+
+      function hideRoundEnd() {
+        awaitingRound = "";
+        window.clearTimeout(alarmRepeatId);
+        stopTitleBlink();
+        elements.roundEnd.dataset.open = "false";
+        elements.roundEnd.inert = true;
+      }
+
+      function startAfterRound() {
+        hideRoundEnd();
+        startTimer();
+      }
+
+      elements.roundEndPrimary.addEventListener("click", () => {
+        const task = getActiveNote();
+        if (elements.roundEndPrimary.dataset.complete === "true" && task) toggleTaskCompleted(task.id);
+        startAfterRound();
+      });
+      elements.roundEndSecondary.addEventListener("click", startAfterRound);
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && awaitingRound) hideRoundEnd();
+      });
+
+      function showRoundToast(endedMode) {
+        if (endedMode === "focus") {
+          showCompletionMoment();
+          return;
+        }
+        elements.completionKicker.textContent = "Descanso terminado";
+        elements.completionText.textContent = "A enfocar de nuevo.";
+        elements.completionToast.dataset.visible = "true";
+        animateCompletionToast();
+        window.clearTimeout(completionTimeout);
+        completionTimeout = window.setTimeout(hideCompletionToast, 4600);
       }
 
       function skipRound() {
-        playAlarm();
+        hideRoundEnd();
+        playChime(0.5);
         if (mode === "focus") {
           mode = "break";
           startRound(state.shortBreakMinutes * 60);
@@ -964,7 +1176,7 @@
           startRound(state.focusMinutes * 60);
           statusMessage = focusMessages.idle;
         }
-        running = false;
+        stopClock();
         stopAmbient();
         pulseRoundChange();
         render();
@@ -972,7 +1184,7 @@
 
       function resetCurrentMode() {
         startRound((mode === "focus" ? state.focusMinutes : state.shortBreakMinutes) * 60);
-        running = false;
+        stopClock();
         statusMessage = mode === "focus" ? focusMessages.idle : breakMessages.idle;
         stopAmbient();
         render();
@@ -1560,27 +1772,45 @@
         floatingWindow.document.querySelector("[data-float-toggle]").textContent = running ? "Pausa" : "Play";
       }
 
-      function playAlarm() {
+      function prepareAudio() {
         if (state.alarm === "none") return;
-        const context = ensureAudioContext();
-        const now = context.currentTime;
-        const oscillator = context.createOscillator();
-        const gain = context.createGain();
-        const frequencies = {
-          bell: 660,
-          gong: 220,
-          birds: 920,
-        };
+        try {
+          const context = ensureAudioContext();
+          if (context.state === "suspended") context.resume();
+        } catch {}
+      }
 
-        oscillator.type = state.alarm === "gong" ? "sine" : "triangle";
-        oscillator.frequency.setValueAtTime(frequencies[state.alarm] || 660, now);
-        gain.gain.setValueAtTime(0.0001, now);
-        gain.gain.exponentialRampToValueAtTime(0.18, now + 0.03);
-        gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.2);
-        oscillator.connect(gain);
-        gain.connect(context.destination);
-        oscillator.start(now);
-        oscillator.stop(now + 1.25);
+      // Dos o tres notas encadenadas, bastante más claras que la nota única de antes.
+      function playChime(volume = 1) {
+        if (state.alarm === "none") return;
+        let context;
+        try {
+          context = ensureAudioContext();
+          if (context.state === "suspended") context.resume();
+        } catch {
+          return;
+        }
+        const melodies = {
+          bell: { wave: "triangle", notes: [660, 990] },
+          gong: { wave: "sine", notes: [196, 262] },
+          birds: { wave: "triangle", notes: [880, 1175, 988] },
+        };
+        const { wave, notes } = melodies[state.alarm] || melodies.bell;
+        const start = context.currentTime;
+        notes.forEach((frequency, index) => {
+          const at = start + index * 0.32;
+          const oscillator = context.createOscillator();
+          const gain = context.createGain();
+          oscillator.type = wave;
+          oscillator.frequency.setValueAtTime(frequency, at);
+          gain.gain.setValueAtTime(0.0001, at);
+          gain.gain.exponentialRampToValueAtTime(0.32 * volume, at + 0.03);
+          gain.gain.exponentialRampToValueAtTime(0.0001, at + 1.4);
+          oscillator.connect(gain);
+          gain.connect(context.destination);
+          oscillator.start(at);
+          oscillator.stop(at + 1.45);
+        });
       }
 
       elements.toggle.addEventListener("click", () => {
@@ -1966,6 +2196,9 @@
             const [min, max, fallback] = limits[key];
             state[key] = clampNumber(input.value, min, max, fallback);
             if (!running) resetCurrentMode();
+          } else if (input.type === "checkbox") {
+            state[key] = input.checked;
+            if (key === "notifySystem" && input.checked) requestNotifyPermission();
           } else if (input.type === "range") {
             state[key] = clampNumber(input.value, 0, 100, defaults[key]);
             if (key === "ambientVolume") {
