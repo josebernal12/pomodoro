@@ -2216,6 +2216,18 @@
         cursor: pointer;
       }
 
+      .field-note {
+        margin: -4px 0 0;
+        padding: 0 22px;
+        color: var(--quiet-ink);
+        font-size: 0.82rem;
+        line-height: 1.4;
+      }
+
+      .field-note[hidden] {
+        display: none;
+      }
+
       .field .switch input {
         width: 100%;
         min-height: 0;

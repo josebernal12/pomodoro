@@ -28,6 +28,7 @@
         ambientOn: true,
         autoStart: false,
         notifySystem: true,
+        notifyAsked: false,
         ostVolume: 35,
         ostTrackId: "",
         completedToday: 0,
@@ -53,6 +54,7 @@
         message: document.querySelector("[data-message]"),
         todayCount: document.querySelector("[data-today-count]"),
         todayDots: document.querySelector("[data-today-dots]"),
+        notifyStatus: document.querySelector("[data-notify-status]"),
         roundEnd: document.querySelector("[data-round-end]"),
         roundEndKicker: document.querySelector("[data-round-end-kicker]"),
         roundEndTitle: document.querySelector("[data-round-end-title]"),
@@ -185,6 +187,7 @@
           merged.ambientOn = merged.ambientOn !== false;
           merged.autoStart = merged.autoStart === true;
           merged.notifySystem = merged.notifySystem !== false;
+          merged.notifyAsked = merged.notifyAsked === true;
           if (typeof merged.ostTrackId !== "string") merged.ostTrackId = "";
           merged.extensions = { ...defaults.extensions, ...(merged.extensions || {}) };
           merged.notebook = normalizeNotebook(merged.notebook);
@@ -460,6 +463,8 @@
           option.dataset.active = isActive ? "true" : "false";
           option.setAttribute("aria-pressed", isActive.toString());
         });
+
+        renderNotifyStatus();
 
         elements.settings.forEach((input) => {
           const key = input.dataset.setting;
@@ -1081,12 +1086,41 @@
         render();
       }
 
-      function requestNotifyPermission() {
+      // El permiso se pide una sola vez por iniciativa de la app; si lo cierras sin decidir, no vuelve a
+      // insistir. Activar el interruptor en Ajustes sí lo vuelve a pedir, porque eso es una acción tuya.
+      function requestNotifyPermission(explicit = false) {
         if (!state.notifySystem || !("Notification" in window) || Notification.permission !== "default") return;
+        if (state.notifyAsked && !explicit) return;
+        state.notifyAsked = true;
+        saveState();
         try {
-          Notification.requestPermission();
+          Promise.resolve(Notification.requestPermission()).then(renderNotifyStatus);
         } catch {}
       }
+
+      function renderNotifyStatus() {
+        let message = "";
+        if (!("Notification" in window)) {
+          message = "Este navegador no admite notificaciones.";
+        } else if (Notification.permission === "denied") {
+          message = state.notifySystem
+            ? "Bloqueadas en el navegador. Actívalas desde el candado junto a la dirección, en Notificaciones."
+            : "";
+        } else if (Notification.permission === "default" && state.notifySystem) {
+          message = state.notifyAsked
+            ? "Sin permiso todavía. Apaga y vuelve a encender el interruptor para que el navegador pregunte otra vez."
+            : "El navegador te pedirá permiso al empezar una ventana.";
+        }
+        elements.notifyStatus.hidden = !message;
+        elements.notifyStatus.textContent = message;
+      }
+
+      // Si cambias el permiso desde el candado del navegador, el aviso de Ajustes se actualiza solo.
+      try {
+        navigator.permissions?.query({ name: "notifications" }).then((status) => {
+          status.onchange = renderNotifyStatus;
+        });
+      } catch {}
 
       async function sendSystemNotification(title, body) {
         if (!state.notifySystem || !("Notification" in window) || Notification.permission !== "granted") return;
@@ -2198,7 +2232,7 @@
             if (!running) resetCurrentMode();
           } else if (input.type === "checkbox") {
             state[key] = input.checked;
-            if (key === "notifySystem" && input.checked) requestNotifyPermission();
+            if (key === "notifySystem" && input.checked) requestNotifyPermission(true);
           } else if (input.type === "range") {
             state[key] = clampNumber(input.value, 0, 100, defaults[key]);
             if (key === "ambientVolume") {
