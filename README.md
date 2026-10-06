@@ -15,7 +15,7 @@ Abre la dirección local que muestra Astro, normalmente `http://localhost:4321`.
 
 ## Personalizar
 
-- **Fondos:** añade cada ambiente en `public/scenes/<id>/background.webp` y registra su identificador y nombre en `src/components/WindowPanel.astro` y `src/scripts/pomodoro.js`.
+- **Fondos:** añade cada ambiente en `public/scenes/<id>/background.webp` y registra su identificador en tres sitios: la lista de `src/components/WindowPanel.astro` (con su nombre), `sceneIds` en `src/scripts/pomodoro.js` y una regla `.scene-layer[data-scene="<id>"]` en `src/styles/global.css`. La cinta de ambientes se desliza de lado cuando hay más de cinco. `animated: true` en la lista solo pone la marca de play en la miniatura; la reproducción de video aún no está implementada.
 - **Música:** abre **Banda sonora** en la app y añade archivos de audio desde tu dispositivo. Se guardan en el almacenamiento local del navegador.
 - **Tareas:** activa Cuaderno desde Extensiones. Las tareas se conservan entre días y cada bloque de enfoque completado suma al contador de la tarea activa.
 

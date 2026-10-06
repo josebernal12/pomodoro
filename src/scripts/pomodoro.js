@@ -108,6 +108,10 @@
         windowsClose: document.querySelector("[data-windows-close]"),
         windowsPanel: document.querySelector("[data-windows-panel]"),
         sceneOptions: document.querySelectorAll("[data-scene-option]"),
+        scene: document.querySelector(".scene"),
+        sceneTrack: document.querySelector("[data-scene-track]"),
+        sceneTip: document.querySelector("[data-scene-tip]"),
+        sceneNext: document.querySelector("[data-scene-next]"),
         settingsToggle: document.querySelector("[data-settings-toggle]"),
         settingsClose: document.querySelector("[data-settings-close]"),
         settingsPanel: document.querySelector("[data-settings-panel]"),
@@ -416,6 +420,7 @@
         elements.shell.dataset.mode = mode;
         elements.shell.dataset.layout = state.layoutMode;
         elements.shell.dataset.scene = state.sceneId;
+        renderScene();
         elements.shell.dataset.running = running ? "true" : "false";
         elements.toggleLabel.textContent = running ? "Pausa" : "Play";
         elements.toggle.dataset.state = running ? "pause" : "play";
@@ -733,6 +738,8 @@
       }
 
       function syncPanelToggles() {
+        if (!elements.windowsPanel.hidden) centerActiveScene();
+        else hideSceneTip();
         const toggles = getPanelToggleMap();
         Object.entries(getPanelMap()).forEach(([key, panel]) => {
           const toggle = toggles[key];
@@ -1042,6 +1049,107 @@
       elements.railToggle.addEventListener("click", () => setRailOpen(elements.rail.dataset.open !== "true"));
       elements.rail.addEventListener("click", (event) => {
         if (event.target.closest(".rail-button")) setRailOpen(false);
+      });
+
+      // Cada ambiente es una capa; al cambiar, la nueva se funde sobre la anterior en vez de cortarla.
+      let sceneReady = false;
+
+      function sceneLayers() {
+        return [...elements.scene.querySelectorAll(".scene-layer")];
+      }
+
+      function renderScene() {
+        const layers = sceneLayers();
+        const top = layers[layers.length - 1];
+        if (top?.dataset.scene === state.sceneId) {
+          sceneReady = true;
+          return;
+        }
+        switchScene(state.sceneId, sceneReady);
+        sceneReady = true;
+      }
+
+      async function preloadScene(id) {
+        const image = new Image();
+        image.src = `/scenes/${id}/background.webp`;
+        await Promise.race([image.decode().catch(() => {}), new Promise((resolve) => window.setTimeout(resolve, 1500))]);
+      }
+
+      async function switchScene(id, animate) {
+        const next = document.createElement("div");
+        next.className = "scene-layer";
+        next.dataset.scene = id;
+        const dropletsLayer = elements.scene.querySelector(".droplets");
+        const cleanBelow = () => {
+          while (next.previousElementSibling?.classList.contains("scene-layer")) next.previousElementSibling.remove();
+        };
+        if (!animate || !canAnimate()) {
+          elements.scene.insertBefore(next, dropletsLayer);
+          cleanBelow();
+          return;
+        }
+        next.style.opacity = "0";
+        elements.scene.insertBefore(next, dropletsLayer);
+        await preloadScene(id);
+        gsap.to(next, {
+          opacity: 1,
+          duration: 0.8,
+          ease: "power1.inOut",
+          onComplete: () => {
+            next.style.removeProperty("opacity");
+            cleanBelow();
+          },
+        });
+      }
+
+      // Cinta de ambientes: nombre al pasar el mouse, flecha cuando hay más y activa siempre a la vista.
+      function updateSceneMore() {
+        const track = elements.sceneTrack;
+        const remaining = track.scrollWidth - track.clientWidth - track.scrollLeft;
+        elements.sceneNext.hidden = remaining <= 4;
+        track.dataset.more = remaining > 4 ? "true" : "false";
+      }
+
+      function centerActiveScene() {
+        const active = elements.sceneTrack.querySelector('[data-active="true"]');
+        if (active) {
+          const track = elements.sceneTrack;
+          track.scrollLeft = active.offsetLeft - (track.clientWidth - active.offsetWidth) / 2;
+        }
+        updateSceneMore();
+      }
+
+      function showSceneTip(thumb) {
+        const panelRect = elements.windowsPanel.getBoundingClientRect();
+        const thumbRect = thumb.getBoundingClientRect();
+        elements.sceneTip.textContent = thumb.dataset.name + (thumb.dataset.animated === "true" ? " · animado" : "");
+        elements.sceneTip.style.left = `${thumbRect.left - panelRect.left + thumbRect.width / 2}px`;
+        elements.sceneTip.dataset.visible = "true";
+      }
+
+      function hideSceneTip() {
+        elements.sceneTip.dataset.visible = "false";
+      }
+
+      elements.sceneTrack.addEventListener("scroll", updateSceneMore, { passive: true });
+      window.addEventListener("resize", updateSceneMore);
+      elements.sceneNext.addEventListener("click", () => {
+        elements.sceneTrack.scrollBy({ left: elements.sceneTrack.clientWidth * 0.7, behavior: canAnimate() ? "smooth" : "auto" });
+      });
+      elements.sceneTrack.addEventListener(
+        "wheel",
+        (event) => {
+          if (elements.sceneTrack.scrollWidth <= elements.sceneTrack.clientWidth || Math.abs(event.deltaX) > Math.abs(event.deltaY)) return;
+          event.preventDefault();
+          elements.sceneTrack.scrollLeft += event.deltaY;
+        },
+        { passive: false },
+      );
+      elements.sceneOptions.forEach((thumb) => {
+        thumb.addEventListener("pointerenter", () => showSceneTip(thumb));
+        thumb.addEventListener("focus", () => showSceneTip(thumb));
+        thumb.addEventListener("pointerleave", hideSceneTip);
+        thumb.addEventListener("blur", hideSceneTip);
       });
 
       function getSceneUrl() {

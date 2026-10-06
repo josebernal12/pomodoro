@@ -95,25 +95,34 @@
           opacity 500ms ease;
       }
 
-      .app-shell[data-scene="cat-rain-window"] .scene {
+      .scene-layer {
+        position: absolute;
+        inset: 0;
+        z-index: -3;
+        background-position: center;
+        background-size: cover;
+        background-repeat: no-repeat;
+      }
+
+      .scene-layer[data-scene="cat-rain-window"] {
         background-image:
           linear-gradient(180deg, rgba(7, 6, 5, 0.16), rgba(7, 6, 5, 0.34)),
           url("/scenes/cat-rain-window/background.webp");
       }
 
-      .app-shell[data-scene="cat-sunset-room"] .scene {
+      .scene-layer[data-scene="cat-sunset-room"] {
         background-image:
           linear-gradient(180deg, rgba(48, 20, 12, 0.08), rgba(20, 8, 5, 0.34)),
           url("/scenes/cat-sunset-room/background.webp");
       }
 
-      .app-shell[data-scene="cat-tea-room"] .scene {
+      .scene-layer[data-scene="cat-tea-room"] {
         background-image:
           linear-gradient(180deg, rgba(8, 8, 6, 0.12), rgba(7, 6, 5, 0.28)),
           url("/scenes/cat-tea-room/background.webp");
       }
 
-      .app-shell[data-scene="cat-snow-window"] .scene {
+      .scene-layer[data-scene="cat-snow-window"] {
         background-image:
           linear-gradient(180deg, rgba(7, 8, 10, 0.06), rgba(7, 6, 5, 0.28)),
           url("/scenes/cat-snow-window/background.webp");
@@ -1029,7 +1038,8 @@
       .note-switcher-link:focus-visible,
       .note-switcher-float:focus-visible,
       .extension-card:focus-within,
-      .window-card:focus-visible,
+      .scene-thumb:focus-visible,
+      .scene-strip-next:focus-visible,
       .window-close-button:focus-visible,
       .panel-close-button:focus-visible,
       .task-check:focus-visible,
@@ -1769,15 +1779,14 @@
       .windows-panel {
         position: fixed;
         left: 50%;
-        bottom: clamp(14px, 2vw, 22px);
+        bottom: clamp(16px, 2vw, 28px);
         z-index: 6;
-        width: min(760px, calc(100vw - 200px));
-        max-height: calc(100vh - 116px);
-        overflow: auto;
-        padding: 18px;
-        border: 1px solid rgba(255, 247, 232, 0.18);
-        border-radius: 28px;
-        background: rgba(17, 14, 11, 0.88);
+        width: max-content;
+        max-width: calc(100vw - 220px);
+        padding: 8px;
+        border: 1px solid rgba(255, 247, 232, 0.2);
+        border-radius: 40px;
+        background: rgba(17, 14, 11, 0.7);
         box-shadow: 0 26px 80px rgba(0, 0, 0, 0.38);
         transform: translateX(-50%);
         backdrop-filter: blur(22px);
@@ -1787,132 +1796,164 @@
         display: none;
       }
 
-      .windows-head {
+      .scene-strip {
         display: flex;
         align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-        margin-bottom: 10px;
-      }
-
-      .windows-title {
-        margin: 0;
-        color: var(--room-ink);
-        font-family: var(--font-display);
-        font-size: 1.9rem;
-        font-weight: 400;
-        line-height: 1.1;
-      }
-
-      .windows-caption { margin-top: 3px; }
-
-      .window-close-button {
-        display: inline-grid;
-        width: 34px;
-        height: 34px;
-        place-items: center;
-        border: 1px solid rgba(255, 247, 232, 0.13);
-        border-radius: 999px;
-        background: rgba(255, 247, 232, 0.045);
-        color: rgba(255, 247, 232, 0.7);
-        font-size: 1.12rem;
-        line-height: 1;
-        transition:
-          transform 180ms ease,
-          background 180ms ease,
-          color 180ms ease,
-          border-color 180ms ease;
-      }
-
-      .window-close-button:hover {
-        transform: translateY(-1px);
-        border-color: rgba(255, 247, 232, 0.24);
-        background: rgba(255, 247, 232, 0.09);
-        color: var(--room-ink);
-      }
-
-      .window-grid {
-        display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
         gap: 8px;
       }
 
-      .window-card {
-        position: relative;
-        display: grid;
-        min-height: 96px;
-        overflow: hidden;
-        align-content: end;
-        gap: 4px;
-        padding: 10px;
-        border: 1px solid rgba(255, 247, 232, 0.14);
-        border-radius: 18px;
-        background: rgba(12, 12, 10, 0.8);
-        box-shadow:
-          inset 0 -44px 72px rgba(0, 0, 0, 0.46),
-          0 14px 34px rgba(0, 0, 0, 0.18);
-        color: var(--room-ink);
-        text-align: left;
-        transition:
-          transform 180ms ease,
-          border-color 180ms ease,
-          box-shadow 180ms ease;
+      .scene-strip-track {
+        display: flex;
+        min-width: 0;
+        gap: 10px;
+        padding: 4px 4px;
+        overflow-x: auto;
+        scroll-behavior: smooth;
+        scroll-snap-type: x proximity;
+        scrollbar-width: none;
       }
 
-      .window-image {
-        position: absolute;
-        inset: 0;
+      .scene-strip-track::-webkit-scrollbar {
+        display: none;
+      }
+
+      .scene-strip-track[data-more="true"] {
+        -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 36px), transparent);
+        mask-image: linear-gradient(to right, #000 calc(100% - 36px), transparent);
+      }
+
+      .scene-thumb {
+        position: relative;
+        flex: 0 0 auto;
+        width: 100px;
+        height: 56px;
+        overflow: hidden;
+        border: 2px solid transparent;
+        border-radius: 16px;
+        background: rgba(12, 12, 10, 0.8);
+        scroll-snap-align: center;
+        transition:
+          transform 200ms cubic-bezier(0.2, 0.8, 0.2, 1),
+          border-color 200ms ease,
+          box-shadow 200ms ease;
+      }
+
+      .scene-thumb-image {
+        display: block;
         width: 100%;
         height: 100%;
         object-fit: cover;
-        transition: transform 350ms ease;
+        transition: transform 400ms ease;
       }
 
-      .window-card:hover .window-image { transform: scale(1.035); }
-
-      .window-card:hover {
-        transform: translateY(-2px);
-        border-color: rgba(255, 226, 172, 0.38);
+      .scene-thumb:hover {
+        transform: translateY(-3px);
+        border-color: rgba(255, 247, 232, 0.8);
       }
 
-      .window-card[data-active="true"] {
-        border-color: rgba(255, 226, 172, 0.72);
-        box-shadow:
-          inset 0 -44px 72px rgba(0, 0, 0, 0.46),
-          0 0 0 1px rgba(255, 226, 172, 0.2),
-          0 18px 42px rgba(244, 178, 103, 0.18);
+      .scene-thumb:hover .scene-thumb-image {
+        transform: scale(1.06);
       }
 
-      .window-preview {
+      .scene-thumb[data-active="true"] {
+        border-color: var(--ember);
+        box-shadow: 0 0 18px rgba(244, 178, 103, 0.35);
+      }
+
+      .scene-thumb-badge {
         position: absolute;
-        inset: 0;
-        background: linear-gradient(180deg, rgba(0, 0, 0, 0.02), rgba(0, 0, 0, 0.63));
-        pointer-events: none;
+        top: 4px;
+        left: 4px;
+        display: grid;
+        width: 20px;
+        height: 20px;
+        place-items: center;
+        border-radius: 50%;
+        background: var(--ember);
+        color: #2a1a08;
       }
 
-      .window-name {
-        position: relative;
+      .scene-thumb-badge svg {
+        width: 12px;
+        height: 12px;
+        fill: currentColor;
+      }
+
+      .scene-strip-next {
+        display: grid;
+        flex: 0 0 auto;
+        width: 36px;
+        height: 36px;
+        place-items: center;
+        border-radius: 50%;
+        background: rgba(255, 247, 232, 0.08);
+        color: var(--quiet-ink);
+        transition:
+          background 160ms ease,
+          color 160ms ease;
+      }
+
+      .scene-strip-next[hidden] {
+        display: none;
+      }
+
+      .scene-strip-next:hover {
+        background: rgba(255, 247, 232, 0.16);
         color: var(--room-ink);
-        font-size: 0.84rem;
-        font-weight: 650;
-        text-shadow: 0 2px 14px rgba(0, 0, 0, 0.62);
       }
 
-      .window-state {
-        position: relative;
-        width: fit-content;
-        min-height: 23px;
-        padding: 4px 8px;
-        border: 1px solid rgba(255, 226, 172, 0.26);
+      .scene-strip-next svg {
+        width: 18px;
+        height: 18px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.8;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .scene-tip {
+        position: absolute;
+        bottom: calc(100% + 12px);
+        padding: 5px 14px;
+        border: 1px solid rgba(255, 247, 232, 0.16);
         border-radius: 999px;
-        background: rgba(17, 14, 11, 0.5);
-        color: rgba(255, 247, 232, 0.74);
-        font-size: 0.7rem;
+        background: rgba(17, 14, 11, 0.85);
+        color: var(--room-ink);
+        font-size: 0.82rem;
+        white-space: nowrap;
         opacity: 0;
+        pointer-events: none;
+        transform: translate(-50%, 6px);
+        transition:
+          opacity 160ms ease,
+          transform 160ms ease;
       }
 
-      .window-card[data-active="true"] .window-state {
+      .scene-tip[data-visible="true"] {
         opacity: 1;
+        transform: translate(-50%, 0);
+      }
+
+      .window-close-button {
+        display: inline-grid;
+        flex: 0 0 auto;
+        width: 36px;
+        height: 36px;
+        place-items: center;
+        border-radius: 50%;
+        background: rgba(255, 247, 232, 0.06);
+        color: var(--quiet-ink);
+        font-size: 1.15rem;
+        line-height: 1;
+        transition:
+          background 160ms ease,
+          color 160ms ease;
+      }
+
+      .window-close-button:hover {
+        background: rgba(255, 247, 232, 0.14);
+        color: var(--room-ink);
       }
 
       .dev-tools {
@@ -2247,17 +2288,13 @@
         }
 
         .windows-panel {
-          left: auto;
-          right: 0;
-          bottom: 0;
-          width: 100vw;
-          max-height: min(68vh, 520px);
-          padding: 16px;
-          border-right: 0;
-          border-bottom: 0;
-          border-left: 0;
-          border-radius: 14px 14px 0 0;
-          transform: none;
+          bottom: 84px;
+          max-width: calc(100vw - 32px);
+        }
+
+        .scene-thumb {
+          width: 84px;
+          height: 48px;
         }
 
       .extensions-panel,
@@ -2274,16 +2311,6 @@
           border-bottom: 0;
           border-left: 0;
           border-radius: 14px 14px 0 0;
-        }
-
-        .window-grid {
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-          gap: 9px;
-        }
-
-        .window-card {
-          min-height: 122px;
-          padding: 10px;
         }
 
       }
