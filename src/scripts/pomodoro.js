@@ -405,6 +405,8 @@
           ...Array.from({ length: total }, (_, index) => {
             const dot = document.createElement("i");
             if (index < done) dot.dataset.done = "true";
+            // El primer hueco es la ventana en curso: es el que "late" mientras corre el tiempo.
+            else if (index === done) dot.dataset.current = "true";
             return dot;
           }),
         );
